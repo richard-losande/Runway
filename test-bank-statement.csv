@@ -1,0 +1,17 @@
+Date,Description,Amount,Type
+2026-01-05,Monthly Salary,5000.00,Credit
+2026-01-07,Rent Payment,-1500.00,Debit
+2026-01-10,Grocery Store,-250.00,Debit
+2026-01-12,Electric Bill,-120.00,Debit
+2026-01-15,Netflix,-15.99,Debit
+2026-01-18,Gas Station,-60.00,Debit
+2026-01-20,Restaurant,-85.00,Debit
+2026-01-25,Internet Bill,-79.99,Debit
+2026-02-05,Monthly Salary,5000.00,Credit
+2026-02-07,Rent Payment,-1500.00,Debit
+2026-02-09,Grocery Store,-310.00,Debit
+2026-02-11,Water Bill,-45.00,Debit
+2026-02-14,Gym Membership,-50.00,Debit
+2026-02-18,Gas Station,-55.00,Debit
+2026-02-22,Clothing Store,-200.00,Debit
+2026-02-28,Phone Bill,-85.00,Debit

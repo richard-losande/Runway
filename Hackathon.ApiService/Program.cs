@@ -19,6 +19,12 @@ builder.Services.AddDbContext<MainDbContext>(options =>
     options.UseNpgsql(dbConnectionString));
 builder.Services.AddScoped<IMaindbContext>(sp => sp.GetRequiredService<MainDbContext>());
 builder.Services.AddHttpClient<IOpenAiService, OpenAiService>();
+builder.Services.Configure<Microsoft.Extensions.Http.Resilience.HttpStandardResilienceOptions>(
+    "IOpenAiService-Standard", options =>
+    {
+        options.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(2);
+        options.AttemptTimeout.Timeout = TimeSpan.FromMinutes(2);
+    });
 builder.Services.AddAuthorizationBuilder()
     .SetFallbackPolicy(new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
