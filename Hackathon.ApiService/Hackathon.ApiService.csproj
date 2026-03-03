@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);EXTEXP0001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,6 +32,10 @@
     <Folder Include="Databases\Models\" />
     <Folder Include="Integrations\" />
     <Folder Include="Shared\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Features\Runway\DemoData\AlexTransactions.csv" />
   </ItemGroup>
 
 </Project>
