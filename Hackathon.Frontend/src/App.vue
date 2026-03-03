@@ -1,30 +1,20 @@
-<script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
-</script>
-
 <template>
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="/vite.svg" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://vuejs.org/" target="_blank">
-      <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
-    </a>
+  <div class="min-h-screen bg-gray-50">
+    <InputScreen v-if="store.currentScreen === 1" />
+    <ProcessingScreen v-else-if="store.currentScreen === 2" />
+    <IntelligenceReport v-else-if="store.currentScreen === 3" />
+    <SurvivalDashboard v-else-if="store.currentScreen === 4" />
+    <DiagnosisScreen v-else-if="store.currentScreen === 5" />
   </div>
-  <HelloWorld msg="Vite + Vue" />
 </template>
 
-<style scoped>
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
-}
-</style>
+<script setup lang="ts">
+import { useRunwayStore } from './stores/runway'
+import InputScreen from './components/InputScreen.vue'
+import ProcessingScreen from './components/ProcessingScreen.vue'
+import IntelligenceReport from './components/IntelligenceReport.vue'
+import SurvivalDashboard from './components/SurvivalDashboard.vue'
+import DiagnosisScreen from './components/DiagnosisScreen.vue'
+
+const store = useRunwayStore()
+</script>
