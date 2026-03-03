@@ -134,7 +134,16 @@ builder.Services.AddCors(options =>
   });
 });
 
-builder.Services.AddFastEndpoints();
+builder.Services
+    .AddFastEndpoints()
+    .SwaggerDocument(o =>
+    {
+      o.DocumentSettings = s =>
+      {
+        s.Title = "BFF API";
+        s.Version = "v1";
+      };
+    });
 builder.Services.AddTransient<ApiKeyDelegatingHandler>();
 builder.Services
     .AddRefitClient<IApiServiceClient>()
