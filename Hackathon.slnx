@@ -3,4 +3,5 @@
   <Project Path="Hackathon.AppHost/Hackathon.AppHost.csproj" />
   <Project Path="Hackathon.Bff/Hackathon.Bff.csproj" />
   <Project Path="Hackathon.ServiceDefaults/Hackathon.ServiceDefaults.csproj" />
+  <Project Path="Hackathon.Tests/Hackathon.Tests.csproj" Id="37882481-174f-4bcf-a8d4-61b73229030f" />
 </Solution>

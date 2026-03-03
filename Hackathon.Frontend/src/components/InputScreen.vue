@@ -1,12 +1,12 @@
 <template>
   <div class="flex flex-col items-center justify-center min-h-screen p-8">
-    <div class="w-full max-w-lg">
+    <div class="w-full max-w-lg text-center">
       <h1 class="text-3xl font-bold mb-2">Runway</h1>
       <p class="text-base text-gray-600 mb-8">
         Find out how long your savings would last — and what moves that number.
       </p>
 
-      <div class="bg-white rounded-lg shadow p-6 mb-6">
+      <div class="bg-white rounded-lg shadow p-6 mb-6 text-left">
         <div class="flex flex-col gap-6">
           <!-- Monthly Income (read-only) -->
           <div>
