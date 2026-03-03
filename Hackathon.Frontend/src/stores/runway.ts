@@ -81,7 +81,7 @@ export const useRunwayStore = defineStore('runway', () => {
     error.value = null
 
     try {
-      const topScenario = sp2Result.value.scenarios[0]
+      const topScenario = sp2Result.value.scenarios[0]!
       sp3Result.value = await revealProfile(
         sp1Result.value.elasticityScore,
         sp1Result.value.incomeToBurnRatio,
