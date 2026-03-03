@@ -22,6 +22,6 @@ public class ScenariosEndpoint : Endpoint<RunwayScenariosRequest, Sp2Output>
     public override async Task HandleAsync(RunwayScenariosRequest req, CancellationToken ct)
     {
         var result = _orchestrator.RecalculateScenarios(req);
-        await SendOkAsync(result, ct);
+        await Send.OkAsync(result, cancellation: ct);
     }
 }

@@ -22,6 +22,6 @@ public class ProfileEndpoint : Endpoint<RunwayProfileRequest, Sp3Output>
     public override async Task HandleAsync(RunwayProfileRequest req, CancellationToken ct)
     {
         var result = await _orchestrator.RevealProfileAsync(req, ct);
-        await SendOkAsync(result, ct);
+        await Send.OkAsync(result, cancellation: ct);
     }
 }

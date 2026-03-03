@@ -23,6 +23,6 @@ public class AnalyzeEndpoint : Endpoint<RunwayAnalyzeRequest, RunwayAnalyzeRespo
     public override async Task HandleAsync(RunwayAnalyzeRequest req, CancellationToken ct)
     {
         var result = await _orchestrator.AnalyzeAsync(req, ct);
-        await SendOkAsync(result, ct);
+        await Send.OkAsync(result, cancellation: ct);
     }
 }
