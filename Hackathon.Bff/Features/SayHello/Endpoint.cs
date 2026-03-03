@@ -27,6 +27,6 @@ public class Endpoint : Endpoint<Request, Response>
     public override async Task HandleAsync(Request request, CancellationToken ct)
     {
         var result = await _apiServiceClient.SayHelloAsync(request.Name, ct);
-        await SendOkAsync(new Response { Message = result.Message }, ct);
+        await Send.OkAsync(new Response { Message = result.Message }, cancellation: ct);
     }
 }
