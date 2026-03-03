@@ -3,12 +3,18 @@ using FastEndpoints.Swagger;
 using NSwag;
 using Hackathon.ApiService.Databases.DbContexts;
 using Hackathon.ApiService.Features.FinancialRunway;
+using Hackathon.ApiService.Features.Runway.Services;
 using Hackathon.ApiService.Infrastractures.Authentication;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(5);
+    options.Limits.RequestHeadersTimeout = TimeSpan.FromMinutes(5);
+});
 builder.AddServiceDefaults();
 builder.Services.AddProblemDetails();
 builder.Services.AddAuthentication("ApiKey")
@@ -18,13 +24,30 @@ var dbConnectionString = builder.Configuration.GetConnectionString("hackathonDb"
 builder.Services.AddDbContext<MainDbContext>(options =>
     options.UseNpgsql(dbConnectionString));
 builder.Services.AddScoped<IMaindbContext>(sp => sp.GetRequiredService<MainDbContext>());
-builder.Services.AddHttpClient<IOpenAiService, OpenAiService>();
-builder.Services.Configure<Microsoft.Extensions.Http.Resilience.HttpStandardResilienceOptions>(
-    "IOpenAiService-Standard", options =>
+builder.Services.AddHttpClient<IOpenAiService, OpenAiService>()
+    .RemoveAllResilienceHandlers()
+    .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromMinutes(3));
+
+// Runway Superpowers services
+builder.Services.AddHttpClient<ITransactionIntelligence, TransactionIntelligence>()
+    .RemoveAllResilienceHandlers()
+    .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromMinutes(3));
+builder.Services.AddHttpClient<IBehavioralIntelligence, BehavioralIntelligence>()
+    .RemoveAllResilienceHandlers()
+    .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(10));
+builder.Services.AddScoped<ISurvivalSimulator, SurvivalSimulator>();
+builder.Services.AddScoped<IRunwayOrchestrator, RunwayOrchestrator>();
+
+// CORS for Vue frontend
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
     {
-        options.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(2);
-        options.AttemptTimeout.Timeout = TimeSpan.FromMinutes(2);
+        policy.WithOrigins("http://localhost:5173", "http://localhost:3000")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
     });
+});
 builder.Services.AddAuthorizationBuilder()
     .SetFallbackPolicy(new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
@@ -54,6 +77,7 @@ if (app.Environment.IsDevelopment())
 else
   app.UseExceptionHandler();
 
+app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 
