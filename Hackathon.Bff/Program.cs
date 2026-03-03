@@ -147,7 +147,12 @@ builder.Services
 builder.Services.AddTransient<ApiKeyDelegatingHandler>();
 builder.Services
     .AddRefitClient<IApiServiceClient>()
-    .ConfigureHttpClient(c => c.BaseAddress = new Uri("https+http://apiservice"))
+    .ConfigureHttpClient(c =>
+    {
+        c.BaseAddress = new Uri("https+http://apiservice");
+        c.Timeout = TimeSpan.FromMinutes(5);
+    })
+    .RemoveAllResilienceHandlers()
     .AddHttpMessageHandler<ApiKeyDelegatingHandler>();
 
 var app = builder.Build();

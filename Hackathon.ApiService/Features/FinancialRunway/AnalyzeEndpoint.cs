@@ -35,36 +35,43 @@ public class AnalyzeEndpoint : Endpoint<AnalyzeRequest, AnalyzeResponse>
         using var reader = new StreamReader(req.CsvFile.OpenReadStream());
         var csvContent = await reader.ReadToEndAsync(ct);
 
-        // Parse life events
+        // Parse life events — sanitize input (Postman may add surrounding quotes or whitespace)
         var lifeEvents = new List<LifeEventInput>();
         if (!string.IsNullOrWhiteSpace(req.LifeEventsJson))
         {
-            lifeEvents = JsonSerializer.Deserialize<List<LifeEventInput>>(req.LifeEventsJson, new JsonSerializerOptions
+            var sanitized = req.LifeEventsJson.Trim().Trim('\'', '"');
+            if (sanitized.StartsWith('['))
             {
-                PropertyNameCaseInsensitive = true
-            }) ?? [];
+                lifeEvents = JsonSerializer.Deserialize<List<LifeEventInput>>(sanitized, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true,
+                    AllowTrailingCommas = true,
+                    ReadCommentHandling = JsonCommentHandling.Skip
+                }) ?? [];
+            }
         }
 
-        // Call OpenAI
+        // Call OpenAI (use separate timeout — default CancellationToken is too short)
+        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
         var result = await _openAiService.AnalyzeFinancialDataAsync(
-            csvContent, req.MonthlySalary, req.TotalSavings, lifeEvents, ct);
+            csvContent, req.MonthlySalary, req.TotalSavings, lifeEvents, cts.Token);
 
         // Save to DB
-        var entity = new FinancialAnalysis
-        {
-            Id = Guid.NewGuid(),
-            MonthlySalary = req.MonthlySalary,
-            TotalSavings = req.TotalSavings,
-            RunwayMonths = result.RunwayMonths,
-            AdjustedRunwayMonths = result.AdjustedRunwayMonths,
-            MonthlyBurnRate = result.MonthlyBurnRate,
-            ResponseJson = JsonSerializer.Serialize(result),
-            AnalyzedAt = result.AnalyzedAt
-        };
+        //var entity = new FinancialAnalysis
+        //{
+        //    Id = Guid.NewGuid(),
+        //    MonthlySalary = req.MonthlySalary,
+        //    TotalSavings = req.TotalSavings,
+        //    RunwayMonths = result.RunwayMonths,
+        //    AdjustedRunwayMonths = result.AdjustedRunwayMonths,
+        //    MonthlyBurnRate = result.MonthlyBurnRate,
+        //    ResponseJson = JsonSerializer.Serialize(result),
+        //    AnalyzedAt = result.AnalyzedAt
+        //};
 
-        _dbContext.FinancialAnalyses.Add(entity);
-        await _dbContext.SaveChangesAsync(ct);
+        //_dbContext.FinancialAnalyses.Add(entity);
+        //await _dbContext.SaveChangesAsync(ct);
 
-        await Send.OkAsync(result, cancellation: ct);
+        await Send.OkAsync(result, cancellation: cts.Token);
     }
 }

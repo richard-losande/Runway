@@ -22,6 +22,8 @@ public class LifeEventInput
     public LifeEventType Type { get; set; }
     public string? Description { get; set; }
     public int MonthFromNow { get; set; }
+    public bool Recurring { get; set; }
+    public decimal? EstimatedCost { get; set; }
 }
 
 // === Response DTOs ===

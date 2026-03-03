@@ -1,0 +1,6 @@
+@Hackathon.Bff_HostAddress = http://localhost:5208
+
+GET {{Hackathon.Bff_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

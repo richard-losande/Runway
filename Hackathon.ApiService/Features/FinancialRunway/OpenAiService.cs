@@ -42,7 +42,9 @@ public class OpenAiService : IOpenAiService
     {
         var lifeEventsText = lifeEvents.Count > 0
             ? string.Join("\n", lifeEvents.Select(e =>
-                $"- {e.Type}{(string.IsNullOrEmpty(e.Description) ? "" : $": {e.Description}")} in {e.MonthFromNow} months"))
+                $"- {e.Type}{(string.IsNullOrEmpty(e.Description) ? "" : $": {e.Description}")} in {e.MonthFromNow} months, " +
+                $"{(e.Recurring ? "recurring monthly" : "one-time cost")}" +
+                $"{(e.EstimatedCost.HasValue ? $", estimated cost: {e.EstimatedCost:C}" : "")}"))
             : "None";
 
         var systemMessage = @"You are a financial analyst. Given a bank statement CSV, monthly salary, savings, and planned life events, produce a structured JSON analysis of the user's financial runway.
