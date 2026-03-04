@@ -171,3 +171,20 @@ export interface RunwayComputeScenariosResponse {
   scenarioDeltas: ScenarioWithDelta[]
   reverseModeIds?: string[] | null
 }
+
+// ── Payroll types ──
+
+export interface PayrollLineItem {
+  name: string
+  amount: number
+}
+
+export interface PayrollSummary {
+  grossPay: number
+  netPay: number
+  tax: number
+  deductions: PayrollLineItem[]
+  earnings: PayrollLineItem[]
+  employeeName: string
+  payrollPeriod: string
+}

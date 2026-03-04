@@ -7,6 +7,7 @@ import type {
   Scenario,
   InsightProfile,
   ZoneName,
+  PayrollSummary,
 } from './runway-v4-types'
 
 const api = axios.create({
@@ -75,5 +76,10 @@ export async function computeScenariosV4(
       reverseTarget: reverseTarget ?? null,
     },
   )
+  return data
+}
+
+export async function fetchPayrollSummary(): Promise<PayrollSummary> {
+  const { data } = await api.get<PayrollSummary>('/api/v1/payroll/summary')
   return data
 }
