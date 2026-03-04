@@ -4,7 +4,7 @@
     <div>
       <h1 class="text-2xl font-bold text-gray-900">Your payroll, ready to go</h1>
       <p class="text-sm text-gray-500 mt-1">
-        We pre-filled this from your September 30 payslip. Just confirm your savings below.
+        We pre-filled this from your {{ store.payroll?.payrollPeriod ?? '' }} payslip. Just confirm your savings below.
       </p>
     </div>
 
@@ -21,37 +21,29 @@
         <!-- Gross -->
         <div class="flex justify-between items-center py-2 border-b border-gray-50">
           <span class="text-sm text-gray-600">Gross Pay</span>
-          <span class="text-sm font-semibold text-gray-900">&#8369;35,000</span>
+          <span class="text-sm font-semibold text-gray-900">&#8369;{{ formatAmount(store.payroll?.grossPay ?? 0) }}</span>
+        </div>
+
+        <!-- Earnings (positive adjustments) -->
+        <div v-if="store.payroll?.earnings?.length" class="space-y-2 pl-3 border-l-2 border-green-100">
+          <div v-for="item in store.payroll.earnings" :key="item.name" class="flex justify-between items-center">
+            <span class="text-sm text-gray-500">{{ item.name }}</span>
+            <span class="text-sm text-green-600">+&#8369;{{ formatAmount(item.amount) }}</span>
+          </div>
         </div>
 
         <!-- Deductions -->
         <div class="space-y-2 pl-3 border-l-2 border-gray-100">
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-500">SSS</span>
-            <span class="text-sm text-red-600">-&#8369;1,125</span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-500">PhilHealth</span>
-            <span class="text-sm text-red-600">-&#8369;875</span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-500">Pag-IBIG</span>
-            <span class="text-sm text-red-600">-&#8369;200</span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-500">Withholding Tax</span>
-            <span class="text-sm text-red-600">-&#8369;2,300</span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-500">Salary Loan</span>
-            <span class="text-sm text-red-600">-&#8369;2,000</span>
+          <div v-for="item in store.payroll?.deductions ?? []" :key="item.name" class="flex justify-between items-center">
+            <span class="text-sm text-gray-500">{{ item.name }}</span>
+            <span class="text-sm text-red-600">-&#8369;{{ formatAmount(item.amount) }}</span>
           </div>
         </div>
 
         <!-- Net Take-Home -->
         <div class="flex justify-between items-center pt-3 border-t border-gray-200">
           <span class="text-base font-semibold text-gray-900">Net Take-Home</span>
-          <span class="text-xl font-bold text-green-700">&#8369;28,500</span>
+          <span class="text-xl font-bold text-green-700">&#8369;{{ formatAmount(store.payroll?.netPay ?? 0) }}</span>
         </div>
       </div>
     </div>
@@ -106,4 +98,8 @@
 import { useRunwayV4Store } from '../../stores/runway-v4'
 
 const store = useRunwayV4Store()
+
+function formatAmount(value: number): string {
+  return value.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
 </script>
