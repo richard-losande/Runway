@@ -50,7 +50,7 @@ public class RunwayEngine : IRunwayEngine
     public int ComputeBaseline(RunwayState state)
     {
         if (state.LiquidCash <= 0) return 0;
-        if (state.MonthlyBurn <= 0) return int.MaxValue;
+        if (state.MonthlyBurn <= 0) return 9999;
 
         return (int)Math.Floor(state.LiquidCash / (state.MonthlyBurn / 30m));
     }

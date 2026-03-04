@@ -63,7 +63,7 @@ public class RunwayEngineTests
             Categories = new Dictionary<CategoryKey, decimal>()
         };
         var result = _engine.ComputeBaseline(state);
-        Assert.Equal(int.MaxValue, result);
+        Assert.Equal(9999, result);
     }
 
     // ── ComputeScenarioDays ──────────────────────────────────────────

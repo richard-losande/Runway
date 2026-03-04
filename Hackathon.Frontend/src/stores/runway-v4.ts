@@ -49,6 +49,7 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
   const stackedDelta = ref(0)
   const stackedZone = ref<ZoneName>('Stable')
   const stackedDate = ref('')
+  const reverseModeIds = ref<string[]>([])
 
   const diagnosis = ref<DiagnosisContent | null>(null)
 
@@ -198,6 +199,7 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
     stackedZone: ZoneName
     stackedDate: string
     scenarioDeltas: Array<{ id: string; delta: number }>
+    reverseModeIds?: string[] | null
   }) {
     stackedDays.value = response.stackedDays
     stackedDelta.value = response.stackedDelta
@@ -213,6 +215,12 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
       if (customScenario.value && customScenario.value.id === sd.id) {
         customScenario.value.delta = sd.delta
       }
+    }
+
+    // Apply reverse mode results — auto-activate recommended scenarios
+    if (response.reverseModeIds && response.reverseModeIds.length > 0) {
+      activeScenarioIds.value = [...response.reverseModeIds]
+      reverseModeIds.value = response.reverseModeIds
     }
   }
 
@@ -275,6 +283,7 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
     stackedDelta.value = 0
     stackedZone.value = 'Stable'
     stackedDate.value = ''
+    reverseModeIds.value = []
 
     diagnosis.value = null
 
@@ -310,6 +319,7 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
     stackedDelta,
     stackedZone,
     stackedDate,
+    reverseModeIds,
     diagnosis,
     isAnalyzing,
     isDiagnosing,

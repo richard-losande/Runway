@@ -42,7 +42,15 @@ builder.Services.AddScoped<IRunwayOrchestrator, RunwayOrchestrator>();
 // RunwayV4 services
 builder.Services.AddSingleton<IRunwayEngine, RunwayEngine>();
 builder.Services.AddScoped<IRunwayV4Orchestrator, RunwayV4Orchestrator>();
-builder.Services.AddHttpClient<IDiagnosisNarrativeAgent, DiagnosisNarrativeAgent>();
+builder.Services.AddHttpClient<IDiagnosisNarrativeAgent, DiagnosisNarrativeAgent>(client =>
+{
+    client.BaseAddress = new Uri("https://api.openai.com/");
+    var apiKey = builder.Configuration.GetValue<string>("OpenAI:ApiKey");
+    if (!string.IsNullOrEmpty(apiKey))
+    {
+        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+    }
+});
 
 // CORS for Vue frontend
 builder.Services.AddCors(options =>

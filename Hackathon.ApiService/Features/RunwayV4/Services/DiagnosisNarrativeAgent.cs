@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -16,8 +15,9 @@ public interface IDiagnosisNarrativeAgent
 
 public class DiagnosisNarrativeAgent : IDiagnosisNarrativeAgent
 {
-    private static readonly string[] BannedWords =
-        { "crisis", "danger", "urgent", "warning", "overspending", "irresponsible", "reckless" };
+    private static readonly Regex BannedWordsRegex = new(
+        @"\b(crisis|danger|urgent|warning|overspending|irresponsible|reckless)\b",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -47,14 +47,7 @@ public class DiagnosisNarrativeAgent : IDiagnosisNarrativeAgent
         _demoMode = configuration.GetValue("DemoMode", true);
         _model = configuration.GetValue<string>("OpenAI:Model") ?? "gpt-4o";
 
-        var apiKey = configuration.GetValue<string>("OpenAI:ApiKey");
-
-        _httpClient.BaseAddress = new Uri("https://api.openai.com/");
-        if (!string.IsNullOrEmpty(apiKey))
-        {
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", apiKey);
-        }
+        // BaseAddress and Authorization are configured in Program.cs via AddHttpClient
     }
 
     public async Task<DiagnosisContent> GenerateAsync(RunwayDiagnoseRequest request, CancellationToken ct)
@@ -218,8 +211,7 @@ public class DiagnosisNarrativeAgent : IDiagnosisNarrativeAgent
         if (string.IsNullOrEmpty(text))
             return false;
 
-        var lowerText = text.ToLowerInvariant();
-        return BannedWords.Any(word => Regex.IsMatch(lowerText, @"\b" + Regex.Escape(word) + @"\b"));
+        return BannedWordsRegex.IsMatch(text);
     }
 
     private static string Fmt(decimal value)
