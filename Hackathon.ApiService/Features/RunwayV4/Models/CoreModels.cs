@@ -1,7 +1,10 @@
+using System.Text.Json.Serialization;
+
 namespace Hackathon.ApiService.Features.RunwayV4.Models;
 
 // ── Enums ────────────────────────────────────────────────────────────
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum CategoryKey
 {
     FoodDining,
@@ -16,6 +19,7 @@ public enum CategoryKey
     Misc
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum CategoryTier
 {
     Essential,
@@ -23,6 +27,7 @@ public enum CategoryTier
     Committed
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum ScenarioType
 {
     SpendingCut,
@@ -32,6 +37,7 @@ public enum ScenarioType
     Custom
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum EffortTag
 {
     Quick,
@@ -39,12 +45,14 @@ public enum EffortTag
     Life
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum Recurrence
 {
     OneTime,
     Recurring
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum ZoneName
 {
     Critical,
@@ -53,6 +61,7 @@ public enum ZoneName
     Strong
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum ArchetypeKey
 {
     LifestyleInflator,
@@ -61,6 +70,7 @@ public enum ArchetypeKey
     CrisisMode
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum BankSource
 {
     GCash,
@@ -93,6 +103,7 @@ public class Transaction
     public CategoryKey? Category { get; set; }
     public string? Merchant { get; set; }
     public object? Confidence { get; set; }
+    public bool IsCredit { get; set; }
 }
 
 public class MerchantSummary
