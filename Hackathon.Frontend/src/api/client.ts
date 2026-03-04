@@ -2,7 +2,6 @@ import axios from 'axios'
 import type { AnalyzeResponse, Sp2Output, Sp3Output, BurnBreakdown, DangerSignal, ScenarioResult } from './types'
 
 const api = axios.create({
-  baseURL: 'http://localhost:5407',
   headers: { 'Content-Type': 'application/json' },
 })
 

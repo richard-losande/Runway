@@ -11,6 +11,6 @@ builder.AddProject<Projects.Hackathon_Bff>("bff")
 builder.AddNpmApp("frontend", "../Hackathon.Frontend", "dev")
     .WithReference(apiService)
     .WaitFor(apiService)
-    .WithHttpEndpoint(port: 5173, env: "PORT");
+    .WithHttpEndpoint(env: "PORT");
 
 builder.Build().Run();
