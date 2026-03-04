@@ -109,16 +109,9 @@ public class RunwayEngine : IRunwayEngine
             {
                 var monthlyAmount = scenario.Params.MonthlyAmount ?? 0m;
 
-                if (monthlyAmount < 0)
-                {
-                    // Negative = spending cut (reduce burn)
-                    newBurn = monthlyBurn + monthlyAmount; // monthlyAmount is negative, so this subtracts
-                }
-                else
-                {
-                    // Positive = income gain (reduce burn)
-                    newBurn = monthlyBurn - monthlyAmount;
-                }
+                // Positive = extra income → reduce burn (more days)
+                // Negative = extra expense → increase burn (fewer days)
+                newBurn = monthlyBurn - monthlyAmount;
 
                 newBurn = Math.Max(1m, newBurn);
                 newCash = liquidCash;
@@ -164,7 +157,11 @@ public class RunwayEngine : IRunwayEngine
 
     public string DaysToDate(int days, DateTime referenceDate)
     {
-        return referenceDate.AddDays(days).ToString("MMMM d, yyyy", PhCulture);
+        // Clamp to prevent ArgumentOutOfRangeException when days is extremely large
+        // (e.g. from 9999 sentinel + stacked deltas)
+        var maxDays = (DateTime.MaxValue - referenceDate).Days - 1;
+        var clampedDays = Math.Min(days, maxDays);
+        return referenceDate.AddDays(clampedDays).ToString("MMMM d, yyyy", PhCulture);
     }
 
     public List<Scenario> FindFastestPath(int targetDays, RunwayState state, List<Scenario> scenarios)

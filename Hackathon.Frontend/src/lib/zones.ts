@@ -47,5 +47,6 @@ export const CATEGORY_LABELS: Record<string, string> = {
   Housing: 'Housing',
   Transfers: 'Transfers & Family',
   EntertainmentSubs: 'Entertainment & Subs',
+  GovernmentDeductions: 'Government Deductions',
   Misc: 'Miscellaneous',
 }

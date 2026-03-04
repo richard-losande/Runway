@@ -44,7 +44,8 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
   const analysisDate = ref('')
 
   const activeScenarioIds = ref<string[]>([])
-  const customScenario = ref<Scenario | null>(null)
+  const customScenarios = ref<Scenario[]>([])
+  let nextCustomId = 1
   const reverseTarget = ref<number | null>(null)
 
   const stackedDays = ref(0)
@@ -126,7 +127,7 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
 
     // Reset scenario selections
     activeScenarioIds.value = []
-    customScenario.value = null
+    customScenarios.value = []
     reverseTarget.value = null
     stackedDays.value = 0
     stackedDelta.value = 0
@@ -145,8 +146,9 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
   }
 
   function setCustomScenario(label: string, monthlyAmount: number) {
+    const id = `custom_${nextCustomId++}`
     const custom: Scenario = {
-      id: 'custom',
+      id,
       type: 'Custom',
       label,
       effort: 'Habit',
@@ -154,17 +156,14 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
       params: { monthlyAmount, userLabel: label },
       delta: 0,
     }
-    customScenario.value = custom
-
-    if (!activeScenarioIds.value.includes('custom')) {
-      activeScenarioIds.value.push('custom')
-    }
+    customScenarios.value.push(custom)
+    activeScenarioIds.value.push(id)
     recomputeScenarios()
   }
 
-  function clearCustomScenario() {
-    customScenario.value = null
-    const index = activeScenarioIds.value.indexOf('custom')
+  function clearCustomScenario(id: string) {
+    customScenarios.value = customScenarios.value.filter(s => s.id !== id)
+    const index = activeScenarioIds.value.indexOf(id)
     if (index >= 0) {
       activeScenarioIds.value.splice(index, 1)
     }
@@ -185,9 +184,9 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
     try {
       const response = await computeScenariosV4(
         state.value,
-        scenarios.value,
+        [...scenarios.value, ...customScenarios.value],
         activeScenarioIds.value,
-        customScenario.value,
+        null,
         reverseTarget.value,
       )
       applyScenarioResult(response)
@@ -217,8 +216,9 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
       if (scenario) {
         scenario.delta = sd.delta
       }
-      if (customScenario.value && customScenario.value.id === sd.id) {
-        customScenario.value.delta = sd.delta
+      const custom = customScenarios.value.find(s => s.id === sd.id)
+      if (custom) {
+        custom.delta = sd.delta
       }
     }
 
@@ -281,7 +281,7 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
     analysisDate.value = ''
 
     activeScenarioIds.value = []
-    customScenario.value = null
+    customScenarios.value = []
     reverseTarget.value = null
 
     stackedDays.value = 0
@@ -304,28 +304,41 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
   function analyzeFromPayroll(manualSpend: number) {
     if (!payroll.value) return
 
-    // Use payroll deductions as the expense breakdown under BillsUtilities
-    const deductionTotal = payroll.value.deductions.reduce((sum, d) => sum + d.amount, 0)
+    // Separate government statutory deductions from other deductions
+    const govNames = ['SSS', 'PhilHealth', 'Pag-IBIG', 'Withholding Tax']
+    const govDeductions = payroll.value.deductions.filter(d => govNames.includes(d.name))
+    const otherDeductions = payroll.value.deductions.filter(d => !govNames.includes(d.name))
+
+    const govTotal = govDeductions.reduce((sum, d) => sum + d.amount, 0)
+    const otherDeductionTotal = otherDeductions.reduce((sum, d) => sum + d.amount, 0)
     const earningsTotal = payroll.value.earnings.reduce((sum, e) => sum + e.amount, 0)
+    const deductionTotal = govTotal + otherDeductionTotal
     const monthlyBurn = manualSpend > 0 ? manualSpend : deductionTotal
 
-    // Build deduction merchants from payroll
-    const deductionMerchants = payroll.value.deductions.map(d => ({
-      name: d.name,
-      monthlyAvg: d.amount,
-    }))
+    const govMerchants = govDeductions.map(d => ({ name: d.name, monthlyAvg: d.amount }))
+    const otherMerchants = otherDeductions.map(d => ({ name: d.name, monthlyAvg: d.amount }))
 
-    // Build categories — put deductions under BillsUtilities, manual spend remainder under Misc
-    const billsAmount = deductionTotal
-    const remainingSpend = Math.max(0, monthlyBurn - billsAmount)
+    // Remaining spend after deductions goes to Misc (user's estimated discretionary spending)
+    const remainingSpend = Math.max(0, monthlyBurn - deductionTotal)
+
+    const emptyCat = (tier: CategoryBreakdownEntry['tier']): CategoryBreakdownEntry => ({
+      monthlyAverage: 0, monthlyAmounts: [0], tier, topMerchants: [], transactionCount: 0,
+    })
 
     const payrollCategories: Record<CategoryKey, CategoryBreakdownEntry> = {
+      GovernmentDeductions: {
+        monthlyAverage: govTotal,
+        monthlyAmounts: [govTotal],
+        tier: 'Committed' as const,
+        topMerchants: govMerchants,
+        transactionCount: govDeductions.length,
+      },
       BillsUtilities: {
-        monthlyAverage: billsAmount,
-        monthlyAmounts: [billsAmount],
+        monthlyAverage: otherDeductionTotal,
+        monthlyAmounts: [otherDeductionTotal],
         tier: 'Essential' as const,
-        topMerchants: deductionMerchants,
-        transactionCount: payroll.value.deductions.length,
+        topMerchants: otherMerchants,
+        transactionCount: otherDeductions.length,
       },
       Misc: {
         monthlyAverage: remainingSpend,
@@ -334,14 +347,14 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
         topMerchants: [],
         transactionCount: 0,
       },
-      FoodDining: { monthlyAverage: 0, monthlyAmounts: [0], tier: 'Discretionary' as const, topMerchants: [], transactionCount: 0 },
-      Groceries: { monthlyAverage: 0, monthlyAmounts: [0], tier: 'Essential' as const, topMerchants: [], transactionCount: 0 },
-      Transport: { monthlyAverage: 0, monthlyAmounts: [0], tier: 'Essential' as const, topMerchants: [], transactionCount: 0 },
-      Shopping: { monthlyAverage: 0, monthlyAmounts: [0], tier: 'Discretionary' as const, topMerchants: [], transactionCount: 0 },
-      HealthWellness: { monthlyAverage: 0, monthlyAmounts: [0], tier: 'Essential' as const, topMerchants: [], transactionCount: 0 },
-      Housing: { monthlyAverage: 0, monthlyAmounts: [0], tier: 'Essential' as const, topMerchants: [], transactionCount: 0 },
-      Transfers: { monthlyAverage: 0, monthlyAmounts: [0], tier: 'Committed' as const, topMerchants: [], transactionCount: 0 },
-      EntertainmentSubs: { monthlyAverage: 0, monthlyAmounts: [0], tier: 'Discretionary' as const, topMerchants: [], transactionCount: 0 },
+      FoodDining: emptyCat('Discretionary'),
+      Groceries: emptyCat('Essential'),
+      Transport: emptyCat('Essential'),
+      Shopping: emptyCat('Discretionary'),
+      HealthWellness: emptyCat('Essential'),
+      Housing: emptyCat('Essential'),
+      Transfers: emptyCat('Committed'),
+      EntertainmentSubs: emptyCat('Discretionary'),
     }
 
     const takeHome = payroll.value.netPay + earningsTotal
@@ -378,7 +391,7 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
       trends: [],
       remittanceNote: null,
       flexibleBurn: remainingSpend,
-      fixedBurn: billsAmount,
+      fixedBurn: govTotal + otherDeductionTotal,
     }
     scenarios.value = []
     fastestWinId.value = null
@@ -387,7 +400,7 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
     analysisDate.value = new Date().toISOString()
 
     activeScenarioIds.value = []
-    customScenario.value = null
+    customScenarios.value = []
     reverseTarget.value = null
     stackedDays.value = 0
     stackedDelta.value = 0
@@ -430,7 +443,7 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
     correctionCandidates,
     analysisDate,
     activeScenarioIds,
-    customScenario,
+    customScenarios,
     reverseTarget,
     stackedDays,
     stackedDelta,

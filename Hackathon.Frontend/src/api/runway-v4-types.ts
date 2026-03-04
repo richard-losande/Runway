@@ -10,6 +10,7 @@ export type CategoryKey =
   | 'Housing'
   | 'Transfers'
   | 'EntertainmentSubs'
+  | 'GovernmentDeductions'
   | 'Misc'
 
 export type CategoryTier = 'Essential' | 'Discretionary' | 'Committed'

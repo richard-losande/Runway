@@ -16,6 +16,7 @@ public enum CategoryKey
     Housing,
     Transfers,
     EntertainmentSubs,
+    GovernmentDeductions,
     Misc
 }
 

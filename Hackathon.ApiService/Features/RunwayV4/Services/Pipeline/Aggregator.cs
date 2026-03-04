@@ -20,6 +20,7 @@ public class Aggregator : IAggregator
         [CategoryKey.Housing] = CategoryTier.Essential,
         [CategoryKey.Transfers] = CategoryTier.Committed,
         [CategoryKey.EntertainmentSubs] = CategoryTier.Discretionary,
+        [CategoryKey.GovernmentDeductions] = CategoryTier.Committed,
         [CategoryKey.Misc] = CategoryTier.Discretionary,
     };
 

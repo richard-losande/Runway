@@ -137,10 +137,12 @@ const correctionsOpen = ref(false)
 
 const categoryKeys = computed<CategoryKey[]>(() => {
   if (!store.categories) return []
-  // Sort by monthly average descending
-  return (Object.keys(store.categories) as CategoryKey[]).sort(
-    (a, b) => (store.categories![b]?.monthlyAverage ?? 0) - (store.categories![a]?.monthlyAverage ?? 0)
-  )
+  // Filter out zero-amount categories and sort by monthly average descending
+  return (Object.keys(store.categories) as CategoryKey[])
+    .filter(k => (store.categories![k]?.monthlyAverage ?? 0) > 0)
+    .sort(
+      (a, b) => (store.categories![b]?.monthlyAverage ?? 0) - (store.categories![a]?.monthlyAverage ?? 0)
+    )
 })
 
 const totalBurn = computed(() => {

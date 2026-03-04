@@ -84,7 +84,26 @@
           </span>
         </button>
 
-        <!-- Custom scenario chip -->
+        <!-- Applied custom scenario chips -->
+        <button
+          v-for="cs in store.customScenarios"
+          :key="cs.id"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-all duration-150"
+          :class="isActive(cs.id)
+            ? 'bg-green-100 border-green-300 text-green-800'
+            : 'bg-white border-gray-200 text-gray-700 hover:border-green-300'"
+          @click="store.toggleScenario(cs.id)"
+        >
+          {{ cs.label }}
+          <span
+            class="text-xs font-bold px-1.5 py-0.5 rounded-full"
+            :class="cs.delta >= 0 ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'"
+          >
+            {{ cs.delta >= 0 ? '+' : '' }}{{ cs.delta }}
+          </span>
+        </button>
+
+        <!-- Add custom scenario button -->
         <button
           v-if="!showCustomForm"
           class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium border-2 border-dashed border-gray-300 text-gray-500 hover:border-green-400 hover:text-green-600 transition-colors"

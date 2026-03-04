@@ -42,15 +42,29 @@
       </div>
     </div>
 
-    <!-- Phase 3: Analysis complete -->
+    <!-- Phase 3: Analysis complete (or still waiting) -->
     <div v-else-if="phase === 3" class="text-center">
-      <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-        <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-        </svg>
-      </div>
-      <p class="text-lg font-semibold text-gray-900">Analysis complete</p>
-      <p class="text-sm text-gray-500 mt-1">Your runway report is ready.</p>
+      <template v-if="store.isAnalyzing">
+        <!-- Still waiting for API -->
+        <div class="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-green-500 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+        </div>
+        <p class="text-lg font-semibold text-gray-900">Still analyzing...</p>
+        <p class="text-sm text-gray-500 mt-1">Processing your transactions, almost done.</p>
+      </template>
+      <template v-else>
+        <!-- Done -->
+        <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <p class="text-lg font-semibold text-gray-900">Analysis complete</p>
+        <p class="text-sm text-gray-500 mt-1">Your runway report is ready.</p>
+      </template>
     </div>
   </div>
 </template>

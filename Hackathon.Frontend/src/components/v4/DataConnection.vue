@@ -62,7 +62,7 @@
               @drop.prevent="onFileDrop"
             >
               <template v-if="selectedFile">
-                <p class="text-sm font-medium text-green-700">{{ selectedFile.name }}</p>
+                <p class="text-sm font-medium text-green-700 truncate max-w-[250px]" :title="selectedFile.name">{{ selectedFile.name }}</p>
                 <p class="text-xs text-green-600 mt-0.5">{{ (selectedFile.size / 1024).toFixed(1) }} KB</p>
               </template>
               <template v-else>
