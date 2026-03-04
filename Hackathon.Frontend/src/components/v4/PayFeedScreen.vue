@@ -1,11 +1,18 @@
 <template>
   <div class="max-w-md mx-auto p-4 space-y-4">
+    <!-- Loading state -->
+    <div v-if="store.isLoadingPayroll" class="flex items-center justify-center py-12">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+    </div>
+
     <!-- Mock Payslip Card -->
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+    <div v-else class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
       <div class="p-5">
         <div class="flex items-center justify-between mb-4">
           <div>
-            <p class="text-xs text-gray-500 uppercase tracking-wide">September 30 Payslip</p>
+            <p class="text-xs text-gray-500 uppercase tracking-wide">
+              {{ store.payroll?.payrollPeriod ?? 'Payslip' }}
+            </p>
             <p class="text-sm text-gray-600 mt-0.5">Sprout Solutions Inc.</p>
           </div>
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -15,17 +22,17 @@
 
         <div class="border-t border-gray-100 pt-4">
           <p class="text-xs text-gray-500 uppercase tracking-wide">Net Take-Home Pay</p>
-          <p class="text-3xl font-bold text-gray-900 mt-1">&#8369;28,500</p>
+          <p class="text-3xl font-bold text-gray-900 mt-1">&#8369;{{ formatAmount(store.payroll?.netPay ?? 0) }}</p>
         </div>
 
         <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
           <div>
             <p class="text-gray-500">Gross Pay</p>
-            <p class="font-medium text-gray-800">&#8369;35,000</p>
+            <p class="font-medium text-gray-800">&#8369;{{ formatAmount(store.payroll?.grossPay ?? 0) }}</p>
           </div>
           <div>
             <p class="text-gray-500">Deductions</p>
-            <p class="font-medium text-gray-800">&#8369;6,500</p>
+            <p class="font-medium text-gray-800">&#8369;{{ formatAmount(totalDeductions) }}</p>
           </div>
         </div>
       </div>
@@ -50,7 +57,8 @@
 
     <!-- CTA Button -->
     <button
-      class="w-full py-3.5 px-6 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-colors duration-150 text-base flex items-center justify-center gap-2"
+      :disabled="store.isLoadingPayroll"
+      class="w-full py-3.5 px-6 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-semibold rounded-xl transition-colors duration-150 text-base flex items-center justify-center gap-2"
       @click="store.goToScreen(2)"
     >
       Check My Runway
@@ -62,7 +70,20 @@
 </template>
 
 <script setup lang="ts">
+import { computed, onMounted } from 'vue'
 import { useRunwayV4Store } from '../../stores/runway-v4'
 
 const store = useRunwayV4Store()
+
+onMounted(() => {
+  store.fetchPayroll()
+})
+
+const totalDeductions = computed(() =>
+  store.payroll?.deductions.reduce((sum, d) => sum + d.amount, 0) ?? 0
+)
+
+function formatAmount(value: number): string {
+  return value.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
 </script>
