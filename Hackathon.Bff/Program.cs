@@ -1,6 +1,7 @@
 using FastEndpoints;
 using FastEndpoints.Swagger;
 using Hackathon.Bff.Integrations.ApiService;
+using Hackathon.Bff.Integrations.SproutPayroll;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Refit;
 using Microsoft.AspNetCore.Authorization;
@@ -154,6 +155,18 @@ builder.Services
     })
     .RemoveAllResilienceHandlers()
     .AddHttpMessageHandler<ApiKeyDelegatingHandler>();
+
+builder.Services.AddTransient<SproutPayrollDelegatingHandler>();
+var sproutBaseUrl = configurations["SproutPayroll:BaseUrl"]
+    ?? throw new InvalidOperationException("Missing config: SproutPayroll:BaseUrl");
+builder.Services
+    .AddRefitClient<ISproutPayrollClient>()
+    .ConfigureHttpClient(c =>
+    {
+        c.BaseAddress = new Uri(sproutBaseUrl);
+        c.Timeout = TimeSpan.FromSeconds(30);
+    })
+    .AddHttpMessageHandler<SproutPayrollDelegatingHandler>();
 
 var app = builder.Build();
 
