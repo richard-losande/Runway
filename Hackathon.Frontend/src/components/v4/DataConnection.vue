@@ -8,10 +8,9 @@
       </p>
     </div>
 
-    <!-- Tier 1: GCash Connect -->
-    <button
-      class="w-full text-left bg-white rounded-2xl shadow-sm border-2 border-green-200 hover:border-green-400 transition-colors overflow-hidden group"
-      @click="connectGCash"
+    <!-- Tier 1: GCash Connect (coming soon) -->
+    <div
+      class="w-full text-left bg-white rounded-2xl shadow-sm border-2 border-gray-200 overflow-hidden opacity-60 cursor-not-allowed"
     >
       <div class="p-5">
         <div class="flex items-start gap-3">
@@ -21,8 +20,8 @@
           <div class="flex-1">
             <div class="flex items-center gap-2 mb-1">
               <h3 class="text-base font-semibold text-gray-900">GCash Connect</h3>
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                Recommended
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                Coming Soon
               </span>
             </div>
             <div class="flex items-center gap-2 mb-2">
@@ -34,18 +33,12 @@
               Automatically pull 4 months of transaction data from your GCash account.
             </p>
           </div>
-          <svg class="w-5 h-5 text-gray-400 group-hover:text-green-500 transition-colors mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-          </svg>
         </div>
       </div>
-    </button>
+    </div>
 
     <!-- Tier 2: CSV Upload -->
-    <button
-      class="w-full text-left bg-white rounded-2xl shadow-sm border border-gray-200 hover:border-green-300 transition-colors overflow-hidden group"
-      @click="uploadCSV"
-    >
+    <div class="w-full text-left bg-white rounded-2xl shadow-sm border border-gray-200 hover:border-green-300 transition-colors overflow-hidden group">
       <div class="p-5">
         <div class="flex items-start gap-3">
           <div class="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
@@ -59,17 +52,46 @@
             <p class="text-sm text-gray-500 mt-1">
               Upload a bank or e-wallet statement file. We support most Philippine bank formats.
             </p>
-            <!-- Drop zone hint -->
-            <div class="mt-3 border-2 border-dashed border-gray-200 rounded-lg p-3 text-center">
-              <p class="text-xs text-gray-400">Drop CSV file here or tap to browse</p>
+            <!-- File input + drop zone -->
+            <div
+              class="mt-3 border-2 border-dashed rounded-lg p-3 text-center cursor-pointer transition-colors"
+              :class="selectedFile ? 'border-green-400 bg-green-50' : 'border-gray-200 hover:border-green-300'"
+              @click="($refs.fileInput as HTMLInputElement).click()"
+              @dragover.prevent="dragOver = true"
+              @dragleave.prevent="dragOver = false"
+              @drop.prevent="onFileDrop"
+            >
+              <template v-if="selectedFile">
+                <p class="text-sm font-medium text-green-700">{{ selectedFile.name }}</p>
+                <p class="text-xs text-green-600 mt-0.5">{{ (selectedFile.size / 1024).toFixed(1) }} KB</p>
+              </template>
+              <template v-else>
+                <p class="text-xs text-gray-400">Drop CSV or Excel file here or tap to browse</p>
+              </template>
             </div>
+            <input
+              ref="fileInput"
+              type="file"
+              accept=".csv,.xlsx,.xls"
+              class="hidden"
+              @change="onFileSelect"
+            />
           </div>
-          <svg class="w-5 h-5 text-gray-400 group-hover:text-green-500 transition-colors mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-          </svg>
         </div>
       </div>
-    </button>
+      <div class="px-5 pb-4">
+        <button
+          class="w-full py-2.5 px-4 font-medium rounded-lg transition-colors text-sm"
+          :class="selectedFile
+            ? 'bg-green-600 hover:bg-green-700 text-white'
+            : 'bg-gray-100 text-gray-400 cursor-not-allowed'"
+          :disabled="!selectedFile"
+          @click="uploadCSV"
+        >
+          {{ selectedFile ? 'Analyze This File' : 'Select a file first' }}
+        </button>
+      </div>
+    </div>
 
     <!-- Tier 3: Manual Estimate -->
     <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
@@ -121,19 +143,41 @@ import { useRunwayV4Store } from '../../stores/runway-v4'
 
 const store = useRunwayV4Store()
 const manualSpend = ref(20000)
+const selectedFile = ref<File | null>(null)
+const dragOver = ref(false)
+const fileInput = ref<HTMLInputElement | null>(null)
 
-function connectGCash() {
-  store.useDemoData = true
-  store.analyze()
+function onFileSelect(event: Event) {
+  const input = event.target as HTMLInputElement
+  if (input.files && input.files.length > 0) {
+    selectedFile.value = input.files[0]
+  }
+}
+
+function onFileDrop(event: DragEvent) {
+  dragOver.value = false
+  if (event.dataTransfer?.files && event.dataTransfer.files.length > 0) {
+    const file = event.dataTransfer.files[0]
+    if (file.name.match(/\.(csv|xlsx|xls)$/i)) {
+      selectedFile.value = file
+    }
+  }
 }
 
 function uploadCSV() {
-  store.useDemoData = true
+  if (!selectedFile.value) return
+  store.csvFile = selectedFile.value
+  store.useDemoData = false
   store.analyze()
 }
 
 function submitManual() {
-  store.useDemoData = true
-  store.analyze()
+  if (store.payroll) {
+    // Use payroll deductions as the expense breakdown
+    store.analyzeFromPayroll(manualSpend.value)
+  } else {
+    store.useDemoData = true
+    store.analyze()
+  }
 }
 </script>

@@ -301,6 +301,102 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
     error.value = null
   }
 
+  function analyzeFromPayroll(manualSpend: number) {
+    if (!payroll.value) return
+
+    // Use payroll deductions as the expense breakdown under BillsUtilities
+    const deductionTotal = payroll.value.deductions.reduce((sum, d) => sum + d.amount, 0)
+    const earningsTotal = payroll.value.earnings.reduce((sum, e) => sum + e.amount, 0)
+    const monthlyBurn = manualSpend > 0 ? manualSpend : deductionTotal
+
+    // Build deduction merchants from payroll
+    const deductionMerchants = payroll.value.deductions.map(d => ({
+      name: d.name,
+      monthlyAvg: d.amount,
+    }))
+
+    // Build categories — put deductions under BillsUtilities, manual spend remainder under Misc
+    const billsAmount = deductionTotal
+    const remainingSpend = Math.max(0, monthlyBurn - billsAmount)
+
+    const payrollCategories: Record<CategoryKey, CategoryBreakdownEntry> = {
+      BillsUtilities: {
+        monthlyAverage: billsAmount,
+        monthlyAmounts: [billsAmount],
+        tier: 'Essential' as const,
+        topMerchants: deductionMerchants,
+        transactionCount: payroll.value.deductions.length,
+      },
+      Misc: {
+        monthlyAverage: remainingSpend,
+        monthlyAmounts: [remainingSpend],
+        tier: 'Discretionary' as const,
+        topMerchants: [],
+        transactionCount: 0,
+      },
+      FoodDining: { monthlyAverage: 0, monthlyAmounts: [0], tier: 'Discretionary' as const, topMerchants: [], transactionCount: 0 },
+      Groceries: { monthlyAverage: 0, monthlyAmounts: [0], tier: 'Essential' as const, topMerchants: [], transactionCount: 0 },
+      Transport: { monthlyAverage: 0, monthlyAmounts: [0], tier: 'Essential' as const, topMerchants: [], transactionCount: 0 },
+      Shopping: { monthlyAverage: 0, monthlyAmounts: [0], tier: 'Discretionary' as const, topMerchants: [], transactionCount: 0 },
+      HealthWellness: { monthlyAverage: 0, monthlyAmounts: [0], tier: 'Essential' as const, topMerchants: [], transactionCount: 0 },
+      Housing: { monthlyAverage: 0, monthlyAmounts: [0], tier: 'Essential' as const, topMerchants: [], transactionCount: 0 },
+      Transfers: { monthlyAverage: 0, monthlyAmounts: [0], tier: 'Committed' as const, topMerchants: [], transactionCount: 0 },
+      EntertainmentSubs: { monthlyAverage: 0, monthlyAmounts: [0], tier: 'Discretionary' as const, topMerchants: [], transactionCount: 0 },
+    }
+
+    const takeHome = payroll.value.netPay + earningsTotal
+
+    const runwayState: RunwayState = {
+      liquidCash: liquidSavings.value,
+      monthlyBurn: monthlyBurn,
+      takeHome: takeHome,
+      categories: Object.fromEntries(
+        Object.entries(payrollCategories).map(([k, v]) => [k, v.monthlyAverage])
+      ) as Record<CategoryKey, number>,
+    }
+
+    // Compute baseline days
+    const days = runwayState.monthlyBurn <= 0
+      ? 9999
+      : Math.floor(runwayState.liquidCash / (runwayState.monthlyBurn / 30))
+
+    const getZone = (d: number): ZoneName => {
+      if (d < 30) return 'Critical'
+      if (d < 60) return 'Fragile'
+      if (d < 120) return 'Stable'
+      return 'Strong'
+    }
+
+    state.value = runwayState
+    baselineDays.value = days
+    zone.value = getZone(days)
+    categories.value = payrollCategories
+    monthlyIncome.value = takeHome
+    insightProfile.value = {
+      archetype: { key: 'SteadySpender', name: 'Steady Spender', signal: '' },
+      dangerSignals: [],
+      trends: [],
+      remittanceNote: null,
+      flexibleBurn: remainingSpend,
+      fixedBurn: billsAmount,
+    }
+    scenarios.value = []
+    fastestWinId.value = null
+    dangerSignals.value = []
+    correctionCandidates.value = []
+    analysisDate.value = new Date().toISOString()
+
+    activeScenarioIds.value = []
+    customScenario.value = null
+    reverseTarget.value = null
+    stackedDays.value = 0
+    stackedDelta.value = 0
+    stackedZone.value = zone.value
+    stackedDate.value = ''
+
+    currentScreen.value = 5
+  }
+
   async function fetchPayroll() {
     if (payroll.value) return // already fetched
     isLoadingPayroll.value = true
@@ -367,5 +463,6 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
     goToScreen,
     restart,
     fetchPayroll,
+    analyzeFromPayroll,
   }
 })
