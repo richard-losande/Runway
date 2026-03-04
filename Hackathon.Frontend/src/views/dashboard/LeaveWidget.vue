@@ -66,7 +66,7 @@ const tabList = ref([
 const activeTabLabel = ref('This Pay Period')
 
 const onTabChange = (index: number) => {
-  activeTabLabel.value = tabList.value[index].label
+  activeTabLabel.value = tabList.value[index]?.label ?? activeTabLabel.value
 }
 
 const leaveTypes = [

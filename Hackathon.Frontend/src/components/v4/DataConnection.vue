@@ -145,12 +145,12 @@ const store = useRunwayV4Store()
 const manualSpend = ref(20000)
 const selectedFile = ref<File | null>(null)
 const dragOver = ref(false)
-const fileInput = ref<HTMLInputElement | null>(null)
 
 function onFileSelect(event: Event) {
   const input = event.target as HTMLInputElement
   if (input.files && input.files.length > 0) {
-    selectedFile.value = input.files[0]
+    const file = input.files[0]
+    if (file) selectedFile.value = file
   }
 }
 
@@ -158,7 +158,7 @@ function onFileDrop(event: DragEvent) {
   dragOver.value = false
   if (event.dataTransfer?.files && event.dataTransfer.files.length > 0) {
     const file = event.dataTransfer.files[0]
-    if (file.name.match(/\.(csv|xlsx|xls)$/i)) {
+    if (file && file.name.match(/\.(csv|xlsx|xls)$/i)) {
       selectedFile.value = file
     }
   }

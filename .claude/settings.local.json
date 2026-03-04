@@ -14,24 +14,20 @@
       "Bash(npm run:*)",
       "Bash(tasklist:*)",
       "Bash(dotnet sln:*)",
-<<<<<<< Updated upstream
       "WebFetch(domain:api.figma.com)",
       "Bash(python3:*)",
       "Bash(node:*)",
       "WebSearch",
       "WebFetch(domain:www.npmjs.com)",
       "Bash(npx vue-tsc:*)",
-      "Bash(wc:*)"
-=======
+      "Bash(wc:*)",
       "Bash(dotnet test:*)",
       "Bash(npx tsc:*)",
-      "Bash(npx vue-tsc:*)",
       "Bash(npx vite:*)",
       "Bash(wmic process:*)",
       "Bash(powershell:*)",
       "Bash(powershell.exe:*)",
       "Bash(xargs ls:*)"
->>>>>>> Stashed changes
     ]
   }
 }
