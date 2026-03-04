@@ -10,11 +10,13 @@ import type {
   DangerSignal,
   CorrectionCandidate,
   DiagnosisContent,
+  PayrollSummary,
 } from '../api/runway-v4-types'
 import {
   analyzeRunwayV4,
   diagnoseRunwayV4,
   computeScenariosV4,
+  fetchPayrollSummary,
 } from '../api/runway-v4-client'
 
 export const useRunwayV4Store = defineStore('runway-v4', () => {
@@ -57,6 +59,9 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
   const isDiagnosing = ref(false)
   const isComputingScenarios = ref(false)
   const error = ref<string | null>(null)
+
+  const payroll = ref<PayrollSummary | null>(null)
+  const isLoadingPayroll = ref(false)
 
   // ── Computed ───────────────────────────────────────────────────────
 
@@ -287,10 +292,26 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
 
     diagnosis.value = null
 
+    payroll.value = null
+    isLoadingPayroll.value = false
+
     isAnalyzing.value = false
     isDiagnosing.value = false
     isComputingScenarios.value = false
     error.value = null
+  }
+
+  async function fetchPayroll() {
+    if (payroll.value) return // already fetched
+    isLoadingPayroll.value = true
+    try {
+      payroll.value = await fetchPayrollSummary()
+      monthlyIncome.value = payroll.value.netPay
+    } catch (e: any) {
+      error.value = e.message || 'Failed to load payroll data'
+    } finally {
+      isLoadingPayroll.value = false
+    }
   }
 
   // ── Return ─────────────────────────────────────────────────────────
@@ -325,6 +346,8 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
     isDiagnosing,
     isComputingScenarios,
     error,
+    payroll,
+    isLoadingPayroll,
 
     // Computed
     fastestWin,
@@ -343,5 +366,6 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
     fetchDiagnosis,
     goToScreen,
     restart,
+    fetchPayroll,
   }
 })
