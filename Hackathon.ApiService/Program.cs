@@ -4,6 +4,7 @@ using NSwag;
 using Hackathon.ApiService.Databases.DbContexts;
 using Hackathon.ApiService.Features.FinancialRunway;
 using Hackathon.ApiService.Features.Runway.Services;
+using Hackathon.ApiService.Features.RunwayV4.Services;
 using Hackathon.ApiService.Infrastractures.Authentication;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -37,6 +38,11 @@ builder.Services.AddHttpClient<IBehavioralIntelligence, BehavioralIntelligence>(
     .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(10));
 builder.Services.AddScoped<ISurvivalSimulator, SurvivalSimulator>();
 builder.Services.AddScoped<IRunwayOrchestrator, RunwayOrchestrator>();
+
+// RunwayV4 services
+builder.Services.AddSingleton<IRunwayEngine, RunwayEngine>();
+builder.Services.AddScoped<IRunwayV4Orchestrator, RunwayV4Orchestrator>();
+builder.Services.AddHttpClient<IDiagnosisNarrativeAgent, DiagnosisNarrativeAgent>();
 
 // CORS for Vue frontend
 builder.Services.AddCors(options =>
