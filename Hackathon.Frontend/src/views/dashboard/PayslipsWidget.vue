@@ -1,51 +1,45 @@
 <template>
-  <div class="bg-white rounded-2xl overflow-hidden">
-    <!-- Header -->
-    <div class="flex items-center justify-between px-4 py-3 border-b border-[#eff1f1]">
-      <span class="text-base font-medium text-[#00291b]">Payslips</span>
-    </div>
+  <spr-card title="Payslips" :has-content-padding="false">
+    <template #content>
+      <!-- Latest Transactions -->
+      <div class="px-4 pt-3">
+        <span class="spr-body-sm-semibold spr-text-color-supporting">Latest Transactions</span>
+      </div>
 
-    <!-- Latest Transactions -->
-    <div class="px-4 pt-3">
-      <span class="text-sm font-medium text-[#738482]">Latest Transactions</span>
-    </div>
-
-    <!-- Transaction rows -->
-    <div class="divide-y divide-[#eff1f1] px-4">
-      <div
-        v-for="tx in transactions"
-        :key="tx.period"
-        class="flex items-center justify-between py-3"
-      >
-        <div class="flex flex-col">
-          <div class="flex items-center gap-2">
-            <span class="text-sm font-medium text-[#262b2b]">{{ tx.type }}</span>
+      <!-- Transaction rows -->
+      <div class="divide-y spr-border-color-base px-4">
+        <div
+          v-for="tx in transactions"
+          :key="tx.period"
+          class="flex items-center justify-between py-3"
+        >
+          <div class="flex flex-col">
+            <span class="spr-body-sm-semibold spr-text-color-strong">{{ tx.type }}</span>
+            <span class="spr-body-sm-regular spr-text-color-supporting">{{ tx.period }}</span>
+            <span class="spr-body-sm-regular spr-text-color-supporting">{{ tx.note }}</span>
           </div>
-          <span class="text-sm text-[#5d6c6b]">{{ tx.period }}</span>
-          <span class="text-sm text-[#5d6c6b]">{{ tx.note }}</span>
-        </div>
-        <div class="flex items-center gap-1">
-          <span class="text-sm font-medium text-[#262b2b]">{{ tx.amount }}</span>
-          <span class="text-sm text-[#738482]">{{ tx.currency }}</span>
+          <div class="flex items-center gap-1">
+            <span class="spr-body-sm-semibold spr-text-color-strong">{{ tx.amount }}</span>
+            <span class="spr-body-sm-regular spr-text-color-supporting">{{ tx.currency }}</span>
+          </div>
         </div>
       </div>
-    </div>
+    </template>
 
-    <!-- Footer actions -->
-    <div class="flex flex-col gap-2 px-4 pb-4 pt-2">
-      <button class="flex items-center gap-1 text-sm font-medium text-[#262b2b]">
-        <Icon icon="ph:download-simple" class="text-base" />
-        Download BIR 2316
-      </button>
-      <button class="flex items-center gap-1 text-sm font-medium text-[#262b2b]">
-        <Icon icon="ph:eye" class="text-base" />
-        View Payroll Summary
-      </button>
-      <button class="bg-[#158039] text-white rounded-lg px-3 py-2 text-sm font-medium w-full mt-1">
-        Primary
-      </button>
-    </div>
-  </div>
+    <template #footer>
+      <div class="flex flex-col gap-2 w-full">
+        <spr-button variant="tertiary" size="small" hasIcon>
+          <Icon icon="ph:download-simple" />
+          <span>Download BIR 2316</span>
+        </spr-button>
+        <spr-button variant="tertiary" size="small" hasIcon>
+          <Icon icon="ph:eye" />
+          <span>View Payroll Summary</span>
+        </spr-button>
+        <spr-button tone="success" fullwidth>Primary</spr-button>
+      </div>
+    </template>
+  </spr-card>
 </template>
 
 <script setup lang="ts">

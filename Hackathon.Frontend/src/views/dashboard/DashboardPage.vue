@@ -1,16 +1,16 @@
 <template>
-  <div class="flex min-h-screen bg-[#f0f2f2] font-['Rubik']">
+  <div class="flex min-h-screen spr-bg-mushroom-50 spr-font-main">
     <DashboardSidebar />
-    <main class="flex-1 flex flex-col bg-[#f7f8f8]">
+    <main class="flex-1 flex flex-col spr-background-color-surface">
       <AnnouncementBar />
-      <div class="flex-1 bg-[#f1f2f3] px-20 py-6 flex flex-col gap-6 overflow-y-auto">
+      <div class="flex-1 spr-background-color px-20 py-6 flex flex-col gap-6 overflow-y-auto">
         <!-- Page Header -->
         <div class="flex items-center justify-between">
-          <h1 class="text-xl font-medium text-black">Dashboard</h1>
-          <button class="flex items-center gap-2 bg-white rounded-lg px-2 py-3 text-sm font-medium text-[#262b2b] border border-[#eff1f1]">
-            <Icon icon="ph:wrench" class="text-base" />
-            Customize Dashboard
-          </button>
+          <h1 class="spr-heading-md spr-text-color-strong">Dashboard</h1>
+          <spr-button variant="secondary" size="small" hasIcon>
+            <Icon icon="ph:wrench" />
+            <span>Customize Dashboard</span>
+          </spr-button>
         </div>
 
         <ProfileCard />
