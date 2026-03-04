@@ -1,12 +1,16 @@
 using FastEndpoints;
 using FastEndpoints.Swagger;
 using NSwag;
+using Hackathon.ApiService.Features.FinancialRunway;
+using Hackathon.ApiService.Features.Runway.Services;
 using Hackathon.ApiService.Features.RunwayV4.Services;
 using Hackathon.ApiService.Features.RunwayV4.Services.Pipeline;
 using Hackathon.ApiService.Infrastractures.Authentication;
 using Hackathon.ApiService.Integrations.SproutPayroll;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Hackathon.ApiService.Databases.DbContexts;
+using Microsoft.EntityFrameworkCore;
 using Refit;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,6 +23,38 @@ builder.AddServiceDefaults();
 builder.Services.AddProblemDetails();
 builder.Services.AddAuthentication("ApiKey")
     .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthentication>("ApiKey", _ => { });
+
+// Database
+builder.Services.AddDbContext<MainDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("hackathonDb")));
+builder.Services.AddScoped<IMaindbContext>(sp => sp.GetRequiredService<MainDbContext>());
+
+// FinancialRunway services
+builder.Services.AddHttpClient<IOpenAiService, OpenAiService>(client =>
+{
+    client.BaseAddress = new Uri("https://api.openai.com/");
+    var apiKey = builder.Configuration.GetValue<string>("OpenAI:ApiKey");
+    if (!string.IsNullOrEmpty(apiKey))
+        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+});
+
+// Runway services
+builder.Services.AddSingleton<ISurvivalSimulator, SurvivalSimulator>();
+builder.Services.AddHttpClient<ITransactionIntelligence, TransactionIntelligence>(client =>
+{
+    client.BaseAddress = new Uri("https://api.openai.com/");
+    var apiKey = builder.Configuration.GetValue<string>("OpenAI:ApiKey");
+    if (!string.IsNullOrEmpty(apiKey))
+        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+});
+builder.Services.AddHttpClient<IBehavioralIntelligence, BehavioralIntelligence>(client =>
+{
+    client.BaseAddress = new Uri("https://api.openai.com/");
+    var apiKey = builder.Configuration.GetValue<string>("OpenAI:ApiKey");
+    if (!string.IsNullOrEmpty(apiKey))
+        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+});
+builder.Services.AddScoped<IRunwayOrchestrator, RunwayOrchestrator>();
 
 // RunwayV4 services
 builder.Services.AddSingleton<IRunwayEngine, RunwayEngine>();
