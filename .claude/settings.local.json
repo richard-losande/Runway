@@ -13,7 +13,14 @@
       "Bash(npm install:*)",
       "Bash(npm run:*)",
       "Bash(tasklist:*)",
-      "Bash(dotnet sln:*)"
+      "Bash(dotnet sln:*)",
+      "WebFetch(domain:api.figma.com)",
+      "Bash(python3:*)",
+      "Bash(node:*)",
+      "WebSearch",
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(npx vue-tsc:*)",
+      "Bash(wc:*)"
     ]
   }
 }
