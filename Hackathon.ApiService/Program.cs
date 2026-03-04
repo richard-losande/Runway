@@ -1,14 +1,13 @@
 using FastEndpoints;
 using FastEndpoints.Swagger;
 using NSwag;
-using Hackathon.ApiService.Databases.DbContexts;
-using Hackathon.ApiService.Features.FinancialRunway;
-using Hackathon.ApiService.Features.Runway.Services;
 using Hackathon.ApiService.Features.RunwayV4.Services;
+using Hackathon.ApiService.Features.RunwayV4.Services.Pipeline;
 using Hackathon.ApiService.Infrastractures.Authentication;
+using Hackathon.ApiService.Integrations.SproutPayroll;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
+using Refit;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.ConfigureKestrel(options =>
@@ -21,26 +20,14 @@ builder.Services.AddProblemDetails();
 builder.Services.AddAuthentication("ApiKey")
     .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthentication>("ApiKey", _ => { });
 
-var dbConnectionString = builder.Configuration.GetConnectionString("hackathonDb");
-builder.Services.AddDbContext<MainDbContext>(options =>
-    options.UseNpgsql(dbConnectionString));
-builder.Services.AddScoped<IMaindbContext>(sp => sp.GetRequiredService<MainDbContext>());
-builder.Services.AddHttpClient<IOpenAiService, OpenAiService>()
-    .RemoveAllResilienceHandlers()
-    .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromMinutes(3));
-
-// Runway Superpowers services
-builder.Services.AddHttpClient<ITransactionIntelligence, TransactionIntelligence>()
-    .RemoveAllResilienceHandlers()
-    .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromMinutes(3));
-builder.Services.AddHttpClient<IBehavioralIntelligence, BehavioralIntelligence>()
-    .RemoveAllResilienceHandlers()
-    .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(10));
-builder.Services.AddScoped<ISurvivalSimulator, SurvivalSimulator>();
-builder.Services.AddScoped<IRunwayOrchestrator, RunwayOrchestrator>();
-
 // RunwayV4 services
 builder.Services.AddSingleton<IRunwayEngine, RunwayEngine>();
+builder.Services.AddSingleton<IFormatDetector, FormatDetector>();
+builder.Services.AddSingleton<ITransactionNormalizer, TransactionNormalizer>();
+builder.Services.AddSingleton<IMerchantLookup, MerchantLookup>();
+builder.Services.AddSingleton<IAggregator, Aggregator>();
+builder.Services.AddSingleton<IScenarioGenerator, ScenarioGenerator>();
+builder.Services.AddSingleton<IInsightProfileBuilder, InsightProfileBuilder>();
 builder.Services.AddScoped<IRunwayV4Orchestrator, RunwayV4Orchestrator>();
 builder.Services.AddHttpClient<IDiagnosisNarrativeAgent, DiagnosisNarrativeAgent>(client =>
 {
@@ -51,6 +38,28 @@ builder.Services.AddHttpClient<IDiagnosisNarrativeAgent, DiagnosisNarrativeAgent
         client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
     }
 });
+builder.Services.AddHttpClient<ICategorizationAgent, CategorizationAgent>(client =>
+{
+    client.BaseAddress = new Uri("https://api.openai.com/");
+    var apiKey = builder.Configuration.GetValue<string>("OpenAI:ApiKey");
+    if (!string.IsNullOrEmpty(apiKey))
+    {
+        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+    }
+});
+
+// Sprout Payroll Refit client
+builder.Services.AddTransient<SproutPayrollDelegatingHandler>();
+var sproutBaseUrl = builder.Configuration["SproutPayroll:BaseUrl"]
+    ?? throw new InvalidOperationException("Missing config: SproutPayroll:BaseUrl");
+builder.Services
+    .AddRefitClient<ISproutPayrollClient>()
+    .ConfigureHttpClient(c =>
+    {
+        c.BaseAddress = new Uri(sproutBaseUrl);
+        c.Timeout = TimeSpan.FromSeconds(30);
+    })
+    .AddHttpMessageHandler<SproutPayrollDelegatingHandler>();
 
 // CORS for Vue frontend
 builder.Services.AddCors(options =>
