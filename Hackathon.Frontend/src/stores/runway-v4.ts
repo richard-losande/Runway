@@ -23,7 +23,7 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
   // ── State ──────────────────────────────────────────────────────────
 
   const currentScreen = ref(1)
-  const liquidSavings = ref(180000)
+  const liquidSavings = ref(0)
   const monthlyIncome = ref(28500)
 
   const csvFile = ref<File | null>(null)
@@ -278,7 +278,7 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
 
   function restart() {
     currentScreen.value = 1
-    liquidSavings.value = 180000
+    liquidSavings.value = 0
     monthlyIncome.value = 28500
     csvFile.value = null
     useDemoData.value = true
@@ -385,12 +385,21 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
       ) as Record<CategoryKey, number>,
     }
 
-    // Compute baseline days — pure emergency fund metric (savings / expenses)
+    // Compute baseline days
     let days: number
-    if (runwayState.liquidCash <= 0 || runwayState.monthlyBurn <= 0) {
+    if (runwayState.monthlyBurn <= 0) {
       days = 0
-    } else {
+    } else if (runwayState.liquidCash > 0) {
       days = Math.floor(runwayState.liquidCash / (runwayState.monthlyBurn / 30))
+    } else {
+      // No savings: project 6 months of surplus as effective savings
+      const monthlySurplus = runwayState.takeHome - runwayState.monthlyBurn
+      if (monthlySurplus > 0) {
+        const projectedCash = monthlySurplus * 6
+        days = Math.floor(projectedCash / (runwayState.monthlyBurn / 30))
+      } else {
+        days = 0
+      }
     }
 
     const getZone = (d: number): ZoneName => {

@@ -68,28 +68,19 @@ public class InsightProfileBuilder : IInsightProfileBuilder
         // Determined by burn trend + gap size (per spec)
 
         // crisis_mode: burn is 2x+ income, or runway < 30 days
-        if (state.MonthlyBurn >= state.TakeHome * 2 || baselineDays < 30)
+        if ((state.TakeHome > 0 && state.MonthlyBurn >= state.TakeHome * 2) || baselineDays < 30)
         {
             return new ArchetypeInfo
             {
                 Key = ArchetypeKey.CrisisMode,
                 Name = "On the Edge",
-                Signal = "Your burn far exceeds your income, or your runway is under 30 days.",
+                Signal = baselineDays < 30
+                    ? "Your runway is under 30 days — one clear next action can buy you time."
+                    : "Your burn is more than double your income — you're depleting fast.",
             };
         }
 
-        // resilient_saver: burn consistently below income — buffer is growing
-        if (state.MonthlyBurn < state.TakeHome * 0.85m)
-        {
-            return new ArchetypeInfo
-            {
-                Key = ArchetypeKey.ResilientSaver,
-                Name = "The Resilient Saver",
-                Signal = "Your burn is consistently below your income — your buffer is growing.",
-            };
-        }
-
-        // lifestyle_inflator: burn > income AND discretionary spending is growing
+        // Check if discretionary spending is growing
         bool hasGrowingDiscretionary = false;
         foreach (var catKey in DiscretionaryCategories.Where(c => c != CategoryKey.Misc))
         {
@@ -100,6 +91,7 @@ public class InsightProfileBuilder : IInsightProfileBuilder
             }
         }
 
+        // lifestyle_inflator: burn > income AND discretionary spending is growing
         if (state.MonthlyBurn > state.TakeHome && hasGrowingDiscretionary)
         {
             return new ArchetypeInfo
@@ -107,6 +99,17 @@ public class InsightProfileBuilder : IInsightProfileBuilder
                 Key = ArchetypeKey.LifestyleInflator,
                 Name = "The Lifestyle Inflator",
                 Signal = "Spending has expanded to fill and exceed the salary.",
+            };
+        }
+
+        // resilient_saver: burn consistently below income — buffer is growing
+        if (state.TakeHome > 0 && state.MonthlyBurn < state.TakeHome * 0.9m)
+        {
+            return new ArchetypeInfo
+            {
+                Key = ArchetypeKey.ResilientSaver,
+                Name = "The Resilient Saver",
+                Signal = "Your burn is consistently below your income — your buffer is growing.",
             };
         }
 

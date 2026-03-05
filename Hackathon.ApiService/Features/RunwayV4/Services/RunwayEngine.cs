@@ -49,11 +49,25 @@ public class RunwayEngine : IRunwayEngine
 
     public int ComputeBaseline(RunwayState state)
     {
-        // Runway = "how many days can your savings cover your expenses?"
-        // Pure emergency-fund metric — income is not factored into baseline.
-        if (state.LiquidCash <= 0 || state.MonthlyBurn <= 0) return 0;
+        if (state.MonthlyBurn <= 0) return 0;
 
-        return (int)Math.Floor(state.LiquidCash / (state.MonthlyBurn / 30m));
+        // If there are savings, compute days directly: cash / daily burn
+        if (state.LiquidCash > 0)
+        {
+            return (int)Math.Floor(state.LiquidCash / (state.MonthlyBurn / 30m));
+        }
+
+        // No savings: check if income creates a monthly surplus.
+        // Project 6 months of surplus as "effective savings" to show
+        // the runway the user is building toward.
+        var monthlySurplus = state.TakeHome - state.MonthlyBurn;
+        if (monthlySurplus > 0)
+        {
+            var projectedCash = monthlySurplus * 6m;
+            return (int)Math.Floor(projectedCash / (state.MonthlyBurn / 30m));
+        }
+
+        return 0;
     }
 
     public int ComputeScenarioDays(Scenario scenario, RunwayState state)

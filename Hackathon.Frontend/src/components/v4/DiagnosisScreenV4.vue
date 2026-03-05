@@ -57,21 +57,23 @@
         {{ honestTake }}
       </p>
 
-      <!-- Recommended For You -->
+      <!-- Recommended For You — zone-to-product routing -->
       <div>
         <p class="text-xs font-semibold text-gray-400 tracking-widest uppercase mb-3">Recommended for you</p>
         <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
           <div class="p-4 space-y-3">
-            <img src="/readyinsure.svg" alt="readyinsure" class="h-7 w-auto" />
+            <p class="text-lg font-bold" :style="{ color: productConfig.color }">
+              {{ productConfig.name }}
+            </p>
             <p class="text-sm text-gray-600 leading-relaxed">
-              Start building a buffer automatically. Automate your surplus and grow your runway every month.
+              {{ productConfig.description }}
             </p>
             <button
               class="w-full py-3 px-4 rounded-xl font-semibold text-sm text-white transition-colors"
               style="background: #1a4731;"
               @click="store.goToScreen(8)"
             >
-              Start Saving &rarr;
+              {{ productConfig.cta }}
             </button>
           </div>
         </div>
@@ -92,6 +94,7 @@
 import { computed, ref, onMounted, watch } from 'vue'
 import confetti from 'canvas-confetti'
 import { useRunwayV4Store } from '../../stores/runway-v4'
+import { ZONE_CONFIG } from '../../lib/zones'
 
 const store = useRunwayV4Store()
 const containerRef = ref<HTMLElement | null>(null)
@@ -134,6 +137,34 @@ const honestTake = computed(() =>
   store.diagnosis?.honestTake
   ?? "You're not just surviving — you're building. Most people never get this far."
 )
+
+const productConfig = computed(() => {
+  const zone = store.displayZone
+  const product = ZONE_CONFIG[zone]?.product ?? 'ReadySave'
+
+  const configs = {
+    ReadyWage: {
+      name: 'ReadyWage',
+      color: '#E53E3E',
+      description: 'Get immediate access to your earned wages — the fastest path to cash when you need breathing room.',
+      cta: 'Get My Earned Wages Now →',
+    },
+    ReadyCash: {
+      name: 'ReadyCash',
+      color: '#DD6B20',
+      description: 'Bridge the gap with an interest-free emergency loan. Cover the unexpected without breaking your runway.',
+      cta: 'Bridge the Gap →',
+    },
+    ReadySave: {
+      name: 'ReadySave',
+      color: '#38A169',
+      description: 'Start building a buffer automatically. Automate your surplus and grow your runway every month.',
+      cta: 'Start Saving →',
+    },
+  }
+
+  return configs[product]
+})
 
 function launchConfetti() {
   if (!containerRef.value) return

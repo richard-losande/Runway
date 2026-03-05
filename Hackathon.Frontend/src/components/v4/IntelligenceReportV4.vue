@@ -31,7 +31,7 @@
           <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
             <div
               class="h-full rounded-full transition-all duration-500"
-              :class="key === 'Income' ? 'bg-green-400' : 'bg-green-500'"
+              :class="key === 'Income' ? 'bg-green-400' : 'bg-red-400'"
               :style="{ width: getBarWidth(key) + '%' }"
             />
           </div>
@@ -146,6 +146,7 @@ const categoryKeys = computed<CategoryKey[]>(() => {
   // Filter out zero-amount categories, put Income first, then sort expenses by amount descending
   const keys = (Object.keys(store.categories) as CategoryKey[])
     .filter(k => (store.categories![k]?.monthlyAverage ?? 0) > 0)
+    .filter(k => k !== 'GovernmentDeductions')
   const income = keys.filter(k => k === 'Income')
   const expenses = keys
     .filter(k => k !== 'Income')
@@ -155,9 +156,9 @@ const categoryKeys = computed<CategoryKey[]>(() => {
 
 const totalBurn = computed(() => {
   if (!store.categories) return 0
-  // Exclude Income from total burn
+  // Exclude Income and GovernmentDeductions from total burn
   return Object.entries(store.categories)
-    .filter(([k]) => k !== 'Income')
+    .filter(([k]) => k !== 'Income' && k !== 'GovernmentDeductions')
     .reduce((sum, [, cat]) => sum + cat.monthlyAverage, 0)
 })
 
