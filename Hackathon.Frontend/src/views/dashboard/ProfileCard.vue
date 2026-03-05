@@ -4,10 +4,10 @@
       <!-- Content -->
       <div class="flex items-center justify-between px-4 py-4 gap-4">
         <div class="flex items-center gap-4">
-          <spr-avatar variant="initial" initial="Jane Doe" size="xl" badge :status="'disabled'" />
+          <spr-avatar variant="initial" :initial="employeeName" size="xl" badge :status="'disabled'" />
 
           <div class="flex flex-col">
-            <span class="spr-text-color-strong" style="font-size: 24px; font-weight: 600;">Hello, Jane 👋</span>
+            <span class="spr-text-color-strong" style="font-size: 24px; font-weight: 600;">Hello, {{ firstName }} 👋</span>
             <div class="flex items-center gap-2">
               <span class="spr-body-md-regular spr-text-color-supporting">Expected at 09:00 AM</span>
               <spr-lozenge label="09:00 AM - 06:00 PM" tone="success" icon="ph:clock" />
@@ -32,5 +32,11 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { Icon } from '@iconify/vue'
+import { useRunwayV4Store } from '../../stores/runway-v4'
+
+const store = useRunwayV4Store()
+const employeeName = computed(() => store.payroll?.employeeName || 'Jane Doe')
+const firstName = computed(() => employeeName.value.split(' ')[0])
 </script>

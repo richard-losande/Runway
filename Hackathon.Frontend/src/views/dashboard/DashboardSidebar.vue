@@ -13,7 +13,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { useRunwayV4Store } from '../../stores/runway-v4'
+
+const store = useRunwayV4Store()
 
 const activeNav = ref({
   parentNav: 'Dashboard',
@@ -22,7 +25,7 @@ const activeNav = ref({
 })
 
 const userMenu = ref({
-  name: 'Jane Doe',
+  name: store.payroll?.employeeName || 'Jane Doe',
   email: 'jane@company.com',
   profileImage: '',
   items: [
@@ -130,6 +133,10 @@ const navLinks = ref({
       ],
     },
   ],
+})
+
+watch(() => store.payroll?.employeeName, (name) => {
+  if (name) userMenu.value.name = name
 })
 
 function handleNavClick(item: any) {
