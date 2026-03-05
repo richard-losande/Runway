@@ -12,6 +12,7 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { useRunwayV4Store } from '../stores/runway-v4'
 import PayFeedScreen from '../components/v4/PayFeedScreen.vue'
 import PayrollProfile from '../components/v4/PayrollProfile.vue'
@@ -23,4 +24,13 @@ import DiagnosisScreenV4 from '../components/v4/DiagnosisScreenV4.vue'
 import ActionCard from '../components/v4/ActionCard.vue'
 
 const store = useRunwayV4Store()
+
+onMounted(() => {
+  store.fetchPayroll()
+  const params = new URLSearchParams(window.location.search)
+  const screen = parseInt(params.get('screen') ?? '')
+  if (!isNaN(screen) && screen >= 1 && screen <= 8) {
+    store.goToScreen(screen)
+  }
+})
 </script>

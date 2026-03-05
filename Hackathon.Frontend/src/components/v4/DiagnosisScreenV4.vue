@@ -1,111 +1,172 @@
 <template>
-  <div class="max-w-md mx-auto p-4 space-y-5">
-    <!-- Archetype Card (Dark Green Gradient) -->
-    <div class="rounded-2xl overflow-hidden bg-gradient-to-br from-green-800 to-emerald-900 text-white p-6">
-      <p class="text-xs font-semibold uppercase tracking-widest text-green-300 mb-2">Your Pattern</p>
-      <template v-if="!store.isDiagnosing && store.diagnosis">
-        <h2 class="text-2xl font-bold mb-2">{{ store.diagnosis.archetypeName }}</h2>
-        <p class="text-sm text-green-100 leading-relaxed">
-          {{ store.insightProfile?.archetype.signal }}
-        </p>
-      </template>
-      <!-- Shimmer loading state -->
-      <template v-else>
-        <div class="space-y-3 animate-pulse">
-          <div class="h-7 bg-green-700/50 rounded-lg w-3/4" />
-          <div class="h-4 bg-green-700/50 rounded w-full" />
-          <div class="h-4 bg-green-700/50 rounded w-5/6" />
+  <div ref="containerRef" class="flex flex-col min-h-screen max-w-md mx-auto relative overflow-hidden">
+    <div class="flex-1 overflow-y-auto p-4 pb-24 space-y-5" style="background: linear-gradient(180deg, #F0F9B3 3.59%, #FFF 44.25%);">
+
+      <!-- Emoji + Archetype Header -->
+      <div class="pt-4 pb-2">
+        <div class="flex justify-center mb-5">
+          <img :src="archetypeEmoji" alt="emoji" class="w-24 h-24" />
         </div>
-      </template>
-    </div>
+        <p class="text-xs font-semibold text-gray-400 tracking-widest uppercase mb-1">You are a</p>
 
-    <!-- Diagnosis Body Card -->
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-      <template v-if="!store.isDiagnosing && store.diagnosis">
-        <!-- What's happening -->
-        <div class="p-5 border-b border-gray-100">
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">What's happening</h3>
-          <p class="text-sm text-gray-700 leading-relaxed">{{ store.diagnosis.whatIsHappening }}</p>
-        </div>
-
-        <!-- What to do about it -->
-        <div class="p-5 border-b border-gray-100">
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">What to do about it</h3>
-          <p class="text-sm text-gray-700 leading-relaxed">{{ store.diagnosis.whatToDoAboutIt }}</p>
-
-          <!-- Before/After runway -->
-          <div class="mt-3 flex items-center gap-3">
-            <div class="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
-              <span class="text-xs text-gray-500">Before</span>
-              <span class="text-base font-bold text-gray-700">{{ store.baselineDays }}d</span>
-            </div>
-            <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-            <div class="flex items-center gap-2 bg-green-50 rounded-lg px-3 py-2">
-              <span class="text-xs text-green-600">After</span>
-              <span class="text-base font-bold text-green-700">{{ afterDays }}d</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- The honest take -->
-        <div class="p-5">
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">The honest take</h3>
-          <p class="text-sm text-gray-600 leading-relaxed italic">{{ store.diagnosis.honestTake }}</p>
-        </div>
-      </template>
-
-      <!-- Shimmer loading state -->
-      <template v-else>
-        <div class="p-5 space-y-6 animate-pulse">
-          <div class="space-y-2">
-            <div class="h-3 bg-gray-200 rounded w-1/3" />
+        <template v-if="!store.isDiagnosing">
+          <h1 class="text-3xl font-black text-gray-900 mb-3">{{ archetypeName }}</h1>
+          <p class="text-sm text-gray-600 leading-relaxed">{{ signal }}</p>
+        </template>
+        <template v-else>
+          <div class="space-y-2 animate-pulse">
+            <div class="h-8 bg-gray-200 rounded-lg w-2/3 mb-3" />
             <div class="h-4 bg-gray-100 rounded w-full" />
             <div class="h-4 bg-gray-100 rounded w-5/6" />
           </div>
-          <div class="space-y-2">
-            <div class="h-3 bg-gray-200 rounded w-2/5" />
+        </template>
+      </div>
+
+      <!-- What's Happening Card -->
+      <div class="bg-white rounded-2xl border border-gray-200 p-4">
+        <template v-if="!store.isDiagnosing">
+          <p class="text-sm text-gray-700 leading-relaxed">{{ whatIsHappening }}</p>
+        </template>
+        <template v-else>
+          <div class="space-y-2 animate-pulse">
             <div class="h-4 bg-gray-100 rounded w-full" />
+            <div class="h-4 bg-gray-100 rounded w-5/6" />
             <div class="h-4 bg-gray-100 rounded w-4/5" />
-          </div>
-          <div class="space-y-2">
-            <div class="h-3 bg-gray-200 rounded w-1/4" />
             <div class="h-4 bg-gray-100 rounded w-full" />
-            <div class="h-4 bg-gray-100 rounded w-3/4" />
+          </div>
+        </template>
+      </div>
+
+      <!-- Top Recommendation Card -->
+      <div class="rounded-2xl border-2 border-green-500 p-4">
+        <p class="text-xs font-bold text-green-600 tracking-widest uppercase mb-2">Top Recommendation</p>
+        <template v-if="!store.isDiagnosing">
+          <p class="text-sm text-gray-700 leading-relaxed">{{ whatToDoAboutIt }}</p>
+        </template>
+        <template v-else>
+          <div class="space-y-2 animate-pulse">
+            <div class="h-4 bg-green-50 rounded w-full" />
+            <div class="h-4 bg-green-50 rounded w-5/6" />
+            <div class="h-4 bg-green-50 rounded w-3/4" />
+          </div>
+        </template>
+      </div>
+
+      <!-- Honest Take Quote -->
+      <p v-if="!store.isDiagnosing" class="text-sm text-gray-400 italic leading-relaxed">
+        {{ honestTake }}
+      </p>
+
+      <!-- Recommended For You -->
+      <div>
+        <p class="text-xs font-semibold text-gray-400 tracking-widest uppercase mb-3">Recommended for you</p>
+        <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+          <div class="p-4 space-y-3">
+            <img src="/readyinsure.svg" alt="readyinsure" class="h-7 w-auto" />
+            <p class="text-sm text-gray-600 leading-relaxed">
+              Start building a buffer automatically. Automate your surplus and grow your runway every month.
+            </p>
+            <button
+              class="w-full py-3 px-4 rounded-xl font-semibold text-sm text-white transition-colors"
+              style="background: #1a4731;"
+              @click="store.goToScreen(8)"
+            >
+              Start Saving &rarr;
+            </button>
           </div>
         </div>
-      </template>
+      </div>
+
     </div>
 
-    <!-- Attribution -->
-    <p class="text-xs text-gray-400 text-center italic">
-      Generated from 247 transactions &middot; Sprout AI
-    </p>
-
-    <!-- CTA Button -->
-    <button
-      class="w-full py-3.5 px-6 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-colors duration-150 text-base flex items-center justify-center gap-2"
-      :disabled="store.isDiagnosing"
-      :class="{ 'opacity-50 cursor-not-allowed': store.isDiagnosing }"
-      @click="store.goToScreen(8)"
-    >
-      What's My Next Move?
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-      </svg>
-    </button>
+    <!-- Fixed Footer -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-4 rounded-b-2xl">
+      <spr-button variant="secondary" size="large" fullwidth @click="store.goToScreen(6)">
+        Back
+      </spr-button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
+import confetti from 'canvas-confetti'
 import { useRunwayV4Store } from '../../stores/runway-v4'
 
 const store = useRunwayV4Store()
+const containerRef = ref<HTMLElement | null>(null)
 
-const afterDays = computed(() => {
-  const fw = store.fastestWin
-  return fw ? store.baselineDays + fw.delta : store.baselineDays
+const archetypeEmoji = computed(() => {
+  const map: Record<string, string> = {
+    Strong:   '/positive-emoji.svg',
+    Stable:   '/stable.svg',
+    Fragile:  '/fragile.svg',
+    Critical: '/critical.svg',
+  }
+  return map[store.displayZone] ?? '/positive-emoji.svg'
+})
+
+const archetypeName = computed(() =>
+  store.diagnosis?.archetypeName
+  ?? store.insightProfile?.archetype?.name
+  ?? 'Steady Spender'
+)
+
+const signal = computed(() =>
+  store.insightProfile?.archetype?.signal
+  || 'You have a consistent financial pattern with room to build resilience.'
+)
+
+const whatIsHappening = computed(() => {
+  if (store.diagnosis?.whatIsHappening) return store.diagnosis.whatIsHappening
+  const burn = store.state?.monthlyBurn?.toLocaleString('en-PH') ?? '—'
+  const income = store.state?.takeHome?.toLocaleString('en-PH') ?? '—'
+  const days = store.displayDays
+  return `Your monthly burn of ₱${burn} against a ₱${income} income leaves a buffer every month. You have ${days} days of runway — and the habits to grow it.`
+})
+
+const whatToDoAboutIt = computed(() =>
+  store.diagnosis?.whatToDoAboutIt
+  ?? 'Automate a portion of your surplus into a locked savings account the day after payroll. This single move can add weeks to your runway without changing your lifestyle.'
+)
+
+const honestTake = computed(() =>
+  store.diagnosis?.honestTake
+  ?? "You're not just surviving — you're building. Most people never get this far."
+)
+
+function launchConfetti() {
+  if (!containerRef.value) return
+  const rect = containerRef.value.getBoundingClientRect()
+  const canvas = document.createElement('canvas')
+  canvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:50;'
+  containerRef.value.appendChild(canvas)
+
+  const myConfetti = confetti.create(canvas, { resize: true, useWorker: true })
+  const origin = {
+    x: (rect.width / 2) / rect.width,
+    y: 0.1,
+  }
+
+  myConfetti({
+    particleCount: 120,
+    spread: 80,
+    origin,
+    colors: ['#32CE13', '#D2F612', '#A8E63D', '#F0F9B3', '#ffffff'],
+    scalar: 0.9,
+  })
+
+  setTimeout(() => canvas.remove(), 4000)
+}
+
+function maybeConfetti() {
+  if (store.displayZone === 'Strong' || store.displayZone === 'Stable') {
+    setTimeout(launchConfetti, 300)
+  }
+}
+
+onMounted(maybeConfetti)
+watch(() => store.isDiagnosing, (diagnosing) => {
+  if (!diagnosing) maybeConfetti()
 })
 </script>

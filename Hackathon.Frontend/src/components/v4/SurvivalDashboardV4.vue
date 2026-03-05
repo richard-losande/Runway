@@ -1,5 +1,6 @@
 <template>
-  <div class="max-w-md mx-auto p-4 space-y-5">
+  <div class="flex flex-col min-h-screen max-w-md mx-auto">
+  <div class="flex-1 overflow-y-auto p-4 pb-24 space-y-5">
     <!-- Large Runway Number -->
     <div class="text-center pt-4">
       <p
@@ -217,17 +218,18 @@
       </div>
     </div>
 
-    <!-- CTA Button -->
-    <button
-      class="w-full py-3.5 px-6 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-colors duration-150 text-base flex items-center justify-center gap-2"
-      @click="store.fetchDiagnosis()"
-    >
-      What's My Next Move?
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-      </svg>
-    </button>
   </div>
+
+  <!-- Fixed Footer -->
+  <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-4 flex gap-3 rounded-b-2xl">
+    <spr-button variant="secondary" size="large" fullwidth @click="store.goToScreen(5)">
+      Back
+    </spr-button>
+    <spr-button tone="success" size="large" fullwidth @click="revealProfile">
+      Reveal My Profile
+    </spr-button>
+  </div>
+</div>
 </template>
 
 <script setup lang="ts">
@@ -253,6 +255,11 @@ const markerPosition = computed(() => {
 
 function isActive(id: string): boolean {
   return store.activeScenarioIds.includes(id)
+}
+
+function revealProfile() {
+  store.goToScreen(7)
+  store.fetchDiagnosis()
 }
 
 function applyCustom() {
