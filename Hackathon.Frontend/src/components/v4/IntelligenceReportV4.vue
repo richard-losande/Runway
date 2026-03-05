@@ -20,17 +20,21 @@
           class="space-y-1"
         >
           <div class="flex justify-between items-center">
-            <span class="text-sm text-gray-600">{{ getCategoryLabel(key) }}</span>
-            <span class="text-sm font-semibold text-gray-900">
-              &#8369;{{ getCategoryAmount(key).toLocaleString() }}
+            <span class="text-sm" :class="key === 'Income' ? 'text-green-700 font-medium' : 'text-gray-600'">
+              {{ getCategoryLabel(key) }}
+            </span>
+            <span class="text-sm font-semibold" :class="key === 'Income' ? 'text-green-700' : 'text-gray-900'">
+              {{ key === 'Income' ? '+' : '' }}&#8369;{{ getCategoryAmount(key).toLocaleString() }}
             </span>
           </div>
           <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
             <div
-              class="h-full bg-green-500 rounded-full transition-all duration-500"
+              class="h-full rounded-full transition-all duration-500"
+              :class="key === 'Income' ? 'bg-green-400' : 'bg-green-500'"
               :style="{ width: getBarWidth(key) + '%' }"
             />
           </div>
+          <div v-if="key === 'Income'" class="border-b border-gray-100 pb-2 mb-1" />
         </div>
 
         <!-- Total burn row -->
@@ -137,17 +141,22 @@ const correctionsOpen = ref(false)
 
 const categoryKeys = computed<CategoryKey[]>(() => {
   if (!store.categories) return []
-  // Filter out zero-amount categories and sort by monthly average descending
-  return (Object.keys(store.categories) as CategoryKey[])
+  // Filter out zero-amount categories, put Income first, then sort expenses by amount descending
+  const keys = (Object.keys(store.categories) as CategoryKey[])
     .filter(k => (store.categories![k]?.monthlyAverage ?? 0) > 0)
-    .sort(
-      (a, b) => (store.categories![b]?.monthlyAverage ?? 0) - (store.categories![a]?.monthlyAverage ?? 0)
-    )
+  const income = keys.filter(k => k === 'Income')
+  const expenses = keys
+    .filter(k => k !== 'Income')
+    .sort((a, b) => (store.categories![b]?.monthlyAverage ?? 0) - (store.categories![a]?.monthlyAverage ?? 0))
+  return [...income, ...expenses]
 })
 
 const totalBurn = computed(() => {
   if (!store.categories) return 0
-  return Object.values(store.categories).reduce((sum, cat) => sum + cat.monthlyAverage, 0)
+  // Exclude Income from total burn
+  return Object.entries(store.categories)
+    .filter(([k]) => k !== 'Income')
+    .reduce((sum, [, cat]) => sum + cat.monthlyAverage, 0)
 })
 
 function getCategoryLabel(key: CategoryKey): string {

@@ -49,8 +49,9 @@ public class RunwayEngine : IRunwayEngine
 
     public int ComputeBaseline(RunwayState state)
     {
-        if (state.LiquidCash <= 0) return 0;
-        if (state.MonthlyBurn <= 0) return 9999;
+        // Runway = "how many days can your savings cover your expenses?"
+        // Pure emergency-fund metric — income is not factored into baseline.
+        if (state.LiquidCash <= 0 || state.MonthlyBurn <= 0) return 0;
 
         return (int)Math.Floor(state.LiquidCash / (state.MonthlyBurn / 30m));
     }
@@ -59,9 +60,11 @@ public class RunwayEngine : IRunwayEngine
     {
         var liquidCash = state.LiquidCash;
         var monthlyBurn = state.MonthlyBurn;
+        var takeHome = state.TakeHome;
 
         decimal newBurn;
         decimal newCash;
+        decimal newTakeHome = takeHome;
 
         switch (scenario.Type)
         {
@@ -82,11 +85,9 @@ public class RunwayEngine : IRunwayEngine
 
             case ScenarioType.IncomeGain:
             {
-                var monthlyGap = monthlyBurn - state.TakeHome;
-                var newGap = Math.Max(0m, monthlyGap - (scenario.Params.GainAmount ?? 0m));
-                var effectiveBurn = state.TakeHome + newGap;
-
-                newBurn = effectiveBurn;
+                // Extra income offsets expenses, reducing effective monthly burn
+                newBurn = monthlyBurn - (scenario.Params.GainAmount ?? 0m);
+                newBurn = Math.Max(1m, newBurn);
                 newCash = liquidCash;
                 break;
             }
@@ -126,7 +127,7 @@ public class RunwayEngine : IRunwayEngine
         {
             LiquidCash = newCash,
             MonthlyBurn = newBurn,
-            TakeHome = state.TakeHome,
+            TakeHome = newTakeHome,
             Categories = state.Categories
         };
 

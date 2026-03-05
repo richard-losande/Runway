@@ -1,6 +1,7 @@
 using Hackathon.ApiService.Features.RunwayV4.DemoData;
 using Hackathon.ApiService.Features.RunwayV4.Models;
 using Hackathon.ApiService.Features.RunwayV4.Services.Pipeline;
+using Hackathon.ApiService.Integrations.SproutPayroll;
 
 namespace Hackathon.ApiService.Features.RunwayV4.Services;
 
@@ -20,6 +21,7 @@ public class RunwayV4Orchestrator : IRunwayV4Orchestrator
     private readonly IAggregator _aggregator;
     private readonly IScenarioGenerator _scenarioGenerator;
     private readonly IInsightProfileBuilder _insightProfileBuilder;
+    private readonly ISproutPayrollClient _sproutClient;
     private readonly bool _demoMode;
 
     public RunwayV4Orchestrator(
@@ -31,6 +33,7 @@ public class RunwayV4Orchestrator : IRunwayV4Orchestrator
         IAggregator aggregator,
         IScenarioGenerator scenarioGenerator,
         IInsightProfileBuilder insightProfileBuilder,
+        ISproutPayrollClient sproutClient,
         IConfiguration configuration)
     {
         _engine = engine;
@@ -41,6 +44,7 @@ public class RunwayV4Orchestrator : IRunwayV4Orchestrator
         _aggregator = aggregator;
         _scenarioGenerator = scenarioGenerator;
         _insightProfileBuilder = insightProfileBuilder;
+        _sproutClient = sproutClient;
         _demoMode = configuration.GetValue("DemoMode", true);
     }
 
@@ -114,18 +118,62 @@ public class RunwayV4Orchestrator : IRunwayV4Orchestrator
         // Stage 5: Aggregation
         var aggregation = _aggregator.Aggregate(transactions);
 
-        // Build state — credits from CSV add to take-home income
-        var takeHome = request.MonthlyIncome > 0 ? request.MonthlyIncome : 0;
-        if (aggregation.MonthlyCredits > 0)
+        // Stage 6: Merge government deductions from Sprout payroll
+        decimal govDeductionTotal = 0;
+        try
         {
-            takeHome += aggregation.MonthlyCredits;
+            var sproutResponse = await _sproutClient.GetPayrollSummaryAsync(
+                1002, "LM_Feaure_TestData", ct);
+            var entry = sproutResponse.Data.FirstOrDefault();
+            if (entry is not null)
+            {
+                var govDeductions = entry.GovernmentStatutoryDeductions;
+                var govItems = new List<MerchantSummary>
+                {
+                    new() { Name = "SSS", MonthlyAvg = govDeductions.Sssee },
+                    new() { Name = "PhilHealth", MonthlyAvg = govDeductions.Phee },
+                    new() { Name = "Pag-IBIG", MonthlyAvg = govDeductions.Hdmfee },
+                    new() { Name = "Withholding Tax", MonthlyAvg = entry.Tax },
+                };
+                govDeductionTotal = govItems.Sum(g => g.MonthlyAvg);
+
+                aggregation.Categories[CategoryKey.GovernmentDeductions] = new CategoryBreakdownEntry
+                {
+                    MonthlyAverage = govDeductionTotal,
+                    MonthlyAmounts = new List<decimal> { govDeductionTotal },
+                    Tier = CategoryTier.Committed,
+                    TopMerchants = govItems.Where(g => g.MonthlyAvg > 0).ToList(),
+                    TransactionCount = govItems.Count(g => g.MonthlyAvg > 0),
+                };
+            }
+        }
+        catch
+        {
+            // If payroll fetch fails, continue without government deductions
         }
 
+        // Add income (credits) as a visible category in the breakdown
+        if (aggregation.MonthlyCredits > 0)
+        {
+            aggregation.Categories[CategoryKey.Income] = new CategoryBreakdownEntry
+            {
+                MonthlyAverage = aggregation.MonthlyCredits,
+                MonthlyAmounts = aggregation.MonthlyCreditAmounts,
+                Tier = CategoryTier.Committed,
+                TopMerchants = aggregation.TopCreditSources,
+                TransactionCount = aggregation.CreditTransactionCount,
+            };
+        }
+
+        // Build state — CSV is the source of truth for income and expenses
+        // Credits = income (TakeHome), Debits = expenses (MonthlyBurn)
+        // Government deductions from payroll are added to MonthlyBurn
+        // LiquidSavings comes from user input on Screen 2
         var state = new RunwayState
         {
-            LiquidCash = request.LiquidSavings > 0 ? request.LiquidSavings : 0,
-            MonthlyBurn = aggregation.MonthlyBurn,
-            TakeHome = takeHome,
+            LiquidCash = request.LiquidSavings >= 0 ? request.LiquidSavings : 0,
+            MonthlyBurn = aggregation.MonthlyBurn + govDeductionTotal,
+            TakeHome = aggregation.MonthlyCredits,
             Categories = aggregation.Categories.ToDictionary(
                 kvp => kvp.Key,
                 kvp => kvp.Value.MonthlyAverage),
@@ -166,7 +214,7 @@ public class RunwayV4Orchestrator : IRunwayV4Orchestrator
     private RunwayAnalyzeResponse BuildDemoResponse(RunwayAnalyzeRequest request)
     {
         var state = AlexGarciaFixtures.State;
-        state.LiquidCash = request.LiquidSavings > 0 ? request.LiquidSavings : state.LiquidCash;
+        state.LiquidCash = request.LiquidSavings >= 0 ? request.LiquidSavings : state.LiquidCash;
         state.TakeHome = request.MonthlyIncome > 0 ? request.MonthlyIncome : state.TakeHome;
 
         var baselineDays = _engine.ComputeBaseline(state);

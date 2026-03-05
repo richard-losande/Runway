@@ -27,6 +27,9 @@ public class AggregationResult
     public Dictionary<CategoryKey, CategoryBreakdownEntry> Categories { get; set; } = new();
     public decimal MonthlyBurn { get; set; }
     public decimal MonthlyCredits { get; set; }
+    public List<decimal> MonthlyCreditAmounts { get; set; } = new();
+    public List<MerchantSummary> TopCreditSources { get; set; } = new();
+    public int CreditTransactionCount { get; set; }
     public List<CorrectionCandidate> CorrectionCandidates { get; set; } = new();
     public List<Transaction> AllTransactions { get; set; } = new();
 }

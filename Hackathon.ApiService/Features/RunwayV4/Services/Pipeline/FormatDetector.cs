@@ -97,17 +97,55 @@ public class FormatDetector : IFormatDetector
         result.DateColumn = Array.FindIndex(cols, c => c.Contains("DATE"));
         if (result.DateColumn < 0) result.DateColumn = 0;
 
-        // Heuristic: amount = column containing "amount" or "debit"
-        result.AmountColumn = Array.FindIndex(cols, c =>
-            c.Contains("AMOUNT") || c.Contains("DEBIT") || c.Contains("WITHDRAWAL"));
-        if (result.AmountColumn < 0)
-            result.AmountColumn = cols.Length > 2 ? 2 : cols.Length - 1;
+        // Check for separate Credit/Debit columns first
+        int creditIdx = Array.FindIndex(cols, c => c.Contains("CREDIT") && !c.Contains("DEBIT"));
+        int debitIdx = Array.FindIndex(cols, c => c.Contains("DEBIT"));
+        if (creditIdx >= 0 && debitIdx >= 0)
+        {
+            result.HasSeparateCreditDebit = true;
+            result.CreditColumn = creditIdx;
+            result.DebitColumn = debitIdx;
+        }
+        else
+        {
+            // Fallback: single amount column
+            result.AmountColumn = Array.FindIndex(cols, c =>
+                c.Contains("AMOUNT") || c.Contains("DEBIT") || c.Contains("WITHDRAWAL"));
+            if (result.AmountColumn < 0)
+                result.AmountColumn = cols.Length > 2 ? 2 : cols.Length - 1;
+        }
 
-        // Heuristic: description = longest header name column
-        result.DescriptionColumn = Enumerable.Range(0, cols.Length)
-            .Where(i => i != result.DateColumn && i != result.AmountColumn)
-            .OrderByDescending(i => cols[i].Length)
-            .FirstOrDefault();
+        // Heuristic: description column
+        var usedColumns = new HashSet<int> { result.DateColumn };
+        if (result.HasSeparateCreditDebit)
+        {
+            usedColumns.Add(result.CreditColumn);
+            usedColumns.Add(result.DebitColumn);
+        }
+        else
+        {
+            usedColumns.Add(result.AmountColumn);
+        }
+        // Exclude balance and reference columns
+        int balanceIdx = Array.FindIndex(cols, c => c.Contains("BALANCE"));
+        if (balanceIdx >= 0) usedColumns.Add(balanceIdx);
+        int refIdx = Array.FindIndex(cols, c => c.Contains("REFERENCE") || c.Contains("REF NO"));
+        if (refIdx >= 0) usedColumns.Add(refIdx);
+
+        // Prefer a column explicitly named DESCRIPTION or REMARKS
+        var descIdx = Array.FindIndex(cols, c => c == "DESCRIPTION" || c.Contains("REMARKS"));
+        if (descIdx >= 0 && !usedColumns.Contains(descIdx))
+        {
+            result.DescriptionColumn = descIdx;
+        }
+        else
+        {
+            // Fallback: longest remaining header name
+            result.DescriptionColumn = Enumerable.Range(0, cols.Length)
+                .Where(i => !usedColumns.Contains(i))
+                .OrderByDescending(i => cols[i].Length)
+                .FirstOrDefault();
+        }
 
         result.DateFormat = "MM/dd/yyyy";
         return result;
