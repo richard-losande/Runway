@@ -126,7 +126,7 @@
               <div class="px-4 py-4 border-b grid grid-cols-2 gap-4" style="border-color: #e5e7eb;">
                 <div class="flex flex-col gap-0.5">
                   <span class="text-xs spr-text-color-supporting">Employee</span>
-                  <span class="text-sm font-semibold spr-text-color-strong">Jane Doe</span>
+                  <span class="text-sm font-semibold spr-text-color-strong">{{ store.payroll?.employeeName || 'Jane Doe' }}</span>
                 </div>
                 <div class="flex flex-col gap-0.5">
                   <span class="text-xs spr-text-color-supporting">Employee ID</span>
@@ -153,7 +153,7 @@
                 </div>
                 <div class="flex items-center justify-between mt-3 pt-3 border-t" style="border-color: #e5e7eb;">
                   <span class="text-sm font-semibold spr-text-color-strong">Gross Pay</span>
-                  <span class="text-sm font-semibold spr-text-color-strong">₱75,000.00</span>
+                  <span class="text-sm font-semibold spr-text-color-strong">₱{{ formatAmount(grossPay) }}</span>
                 </div>
               </div>
 
@@ -168,7 +168,7 @@
                 </div>
                 <div class="flex items-center justify-between mt-3 pt-3 border-t" style="border-color: #e5e7eb;">
                   <span class="text-sm font-semibold spr-text-color-strong">Total Deductions</span>
-                  <span class="text-sm font-semibold" style="color: #ef4444;">-₱9,750.00</span>
+                  <span class="text-sm font-semibold" style="color: #ef4444;">-₱{{ formatAmount(totalDeductions) }}</span>
                 </div>
               </div>
 
@@ -179,7 +179,7 @@
                     <span class="text-xs font-semibold spr-text-color-supporting tracking-widest uppercase">Net Pay</span>
                     <span class="text-xs spr-text-color-supporting">After all deductions</span>
                   </div>
-                  <span class="text-xl font-bold" style="color: #158039;">₱65,250.00</span>
+                  <span class="text-xl font-bold" style="color: #158039;">₱{{ formatAmount(netPay) }}</span>
                 </div>
               </div>
             </div>
@@ -319,7 +319,7 @@
 </style>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useRunwayV4Store } from '../../stores/runway-v4'
 import PayrollProfile from '../../components/v4/PayrollProfile.vue'
@@ -334,9 +334,35 @@ const store = useRunwayV4Store()
 
 const isOpen = ref(true)
 const showAmounts = ref(false)
-const selectedTx = ref<(typeof transactions)[number] | null>(null)
+const selectedTx = ref<{ type: string; period: string; amount: string; currency: string } | null>(null)
 const stack = ref<string[]>([])
 const stackingRef = ref<{ showPanel: (id: string) => void; hidePanel: (id: string) => void } | null>(null)
+
+onMounted(() => {
+  store.fetchPayroll()
+})
+
+function formatAmount(value: number): string {
+  return value.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+const earnings = computed(() =>
+  (store.payroll?.earnings ?? []).map(e => ({ label: e.name, amount: formatAmount(e.amount) }))
+)
+
+const deductions = computed(() =>
+  (store.payroll?.deductions ?? []).map(d => ({ label: d.name, amount: formatAmount(d.amount) }))
+)
+
+const grossPay = computed(() => store.payroll?.grossPay ?? 0)
+const netPay = computed(() => store.payroll?.netPay ?? 0)
+const totalDeductions = computed(() =>
+  (store.payroll?.deductions ?? []).reduce((sum, d) => sum + d.amount, 0)
+)
+
+const transactions = computed(() => [
+  { type: 'Payroll', period: store.payroll?.payrollPeriod ?? 'Dec\u00A016\u00A0-\u00A031,\u00A02025', amount: `₱${formatAmount(grossPay.value)}`, currency: 'PHP' },
+])
 
 // Watch store screen changes to manage the stacking panel stack
 watch(() => store.currentScreen, (newScreen, oldScreen) => {
@@ -363,19 +389,9 @@ watch(() => store.currentScreen, (newScreen, oldScreen) => {
 })
 
 function openRunway() {
-  const grossPay = 75000
-  const totalDeductions = deductions.reduce((sum, d) => sum + parseFloat(d.amount.replace(/,/g, '')), 0)
-  const netPay = grossPay - totalDeductions
-  store.payroll = {
-    grossPay,
-    netPay,
-    tax: 7487.5,
-    payrollPeriod: selectedTx.value?.period ?? 'Dec 16 - 31, 2025',
-    employeeName: 'Jane Doe',
-    earnings: earnings.map(e => ({ name: e.label, amount: parseFloat(e.amount.replace(/,/g, '')) })),
-    deductions: deductions.map(d => ({ name: d.label, amount: parseFloat(d.amount.replace(/,/g, '')) })),
+  if (store.payroll) {
+    store.monthlyIncome = store.payroll.netPay
   }
-  store.monthlyIncome = netPay
   store.goToScreen(2)
   stackingRef.value?.showPanel('runway-2')
 }
@@ -386,27 +402,8 @@ function closeRunwayPanels() {
     .forEach(p => stackingRef.value?.hidePanel(p))
 }
 
-const transactions = [
-  { type: 'Payroll', period: 'Dec\u00A016\u00A0-\u00A031,\u00A02025', amount: '₱75,000.00', currency: 'PHP' },
-  { type: 'Payroll', period: 'Dec\u00A001\u00A0-\u00A015,\u00A02025', amount: '₱75,000.00', currency: 'PHP' },
-  { type: '13th Month Pay', period: '2024', amount: '₱75,000.00', currency: 'PHP' },
-]
 
-const earnings = [
-  { label: 'Basic Salary', amount: '37,500.00' },
-  { label: 'Transportation Allowance', amount: '2,000.00' },
-  { label: 'Rice Subsidy', amount: '1,500.00' },
-  { label: 'Overtime Pay', amount: '34,000.00' },
-]
-
-const deductions = [
-  { label: 'SSS Contribution', amount: '1,125.00' },
-  { label: 'PhilHealth', amount: '937.50' },
-  { label: 'Pag-IBIG', amount: '200.00' },
-  { label: 'Withholding Tax', amount: '7,487.50' },
-]
-
-function openPayslip(tx: (typeof transactions)[number]) {
+function openPayslip(tx: { type: string; period: string; amount: string; currency: string }) {
   selectedTx.value = tx
   stackingRef.value?.showPanel('payslip')
 }

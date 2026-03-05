@@ -27,7 +27,8 @@
       "Bash(wmic process:*)",
       "Bash(powershell:*)",
       "Bash(powershell.exe:*)",
-      "Bash(xargs ls:*)"
+      "Bash(xargs ls:*)",
+      "Bash(xargs grep:*)"
     ]
   }
 }

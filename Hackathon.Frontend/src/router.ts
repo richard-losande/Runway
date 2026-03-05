@@ -5,11 +5,11 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      component: () => import('./views/RunwayApp.vue'),
+      component: () => import('./views/dashboard/DashboardPage.vue'),
     },
     {
-      path: '/dashboard',
-      component: () => import('./views/dashboard/DashboardPage.vue'),
+      path: '/runway',
+      component: () => import('./views/RunwayApp.vue'),
     },
   ],
 })
