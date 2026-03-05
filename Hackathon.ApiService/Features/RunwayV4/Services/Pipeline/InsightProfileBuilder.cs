@@ -65,18 +65,31 @@ public class InsightProfileBuilder : IInsightProfileBuilder
         RunwayState state,
         int baselineDays)
     {
-        // crisis_mode: burn > 2x takeHome OR baselineDays < 30
-        if (state.MonthlyBurn > state.TakeHome * 2 || baselineDays < 30)
+        // Determined by burn trend + gap size (per spec)
+
+        // crisis_mode: burn is 2x+ income, or runway < 30 days
+        if (state.MonthlyBurn >= state.TakeHome * 2 || baselineDays < 30)
         {
             return new ArchetypeInfo
             {
                 Key = ArchetypeKey.CrisisMode,
                 Name = "On the Edge",
-                Signal = "Your burn significantly exceeds your income or your runway is critically short.",
+                Signal = "Your burn far exceeds your income, or your runway is under 30 days.",
             };
         }
 
-        // lifestyle_inflator: burn > takeHome AND discretionary growing > 15%
+        // resilient_saver: burn consistently below income — buffer is growing
+        if (state.MonthlyBurn < state.TakeHome * 0.85m)
+        {
+            return new ArchetypeInfo
+            {
+                Key = ArchetypeKey.ResilientSaver,
+                Name = "The Resilient Saver",
+                Signal = "Your burn is consistently below your income — your buffer is growing.",
+            };
+        }
+
+        // lifestyle_inflator: burn > income AND discretionary spending is growing
         bool hasGrowingDiscretionary = false;
         foreach (var catKey in DiscretionaryCategories.Where(c => c != CategoryKey.Misc))
         {
@@ -93,22 +106,11 @@ public class InsightProfileBuilder : IInsightProfileBuilder
             {
                 Key = ArchetypeKey.LifestyleInflator,
                 Name = "The Lifestyle Inflator",
-                Signal = "Your spending has expanded to exceed your income, driven by growing discretionary categories.",
+                Signal = "Spending has expanded to fill and exceed the salary.",
             };
         }
 
-        // resilient_saver: burn < takeHome consistently
-        if (state.MonthlyBurn < state.TakeHome)
-        {
-            return new ArchetypeInfo
-            {
-                Key = ArchetypeKey.ResilientSaver,
-                Name = "The Resilient Saver",
-                Signal = "Your burn is consistently below your income — your buffer is growing.",
-            };
-        }
-
-        // steady_spender: default
+        // steady_spender: burn roughly matches income — stable but no buffer growth
         return new ArchetypeInfo
         {
             Key = ArchetypeKey.SteadySpender,
