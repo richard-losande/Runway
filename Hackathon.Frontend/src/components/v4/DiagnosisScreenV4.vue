@@ -124,8 +124,12 @@ const whatIsHappening = computed(() => {
   if (store.diagnosis?.whatIsHappening) return store.diagnosis.whatIsHappening
   const burn = store.state?.monthlyBurn?.toLocaleString('en-PH') ?? '—'
   const income = store.state?.takeHome?.toLocaleString('en-PH') ?? '—'
+  const savings = store.state?.liquidCash?.toLocaleString('en-PH') ?? '0'
   const days = store.displayDays
-  return `Your monthly burn of ₱${burn} against a ₱${income} income leaves a buffer every month. You have ${days} days of runway — and the habits to grow it.`
+  if (days === 0) {
+    return `At ₱${burn}/mo burn against ₱${income} income, your ₱${savings} buffer gives you 0 days of runway. You need breathing room today.`
+  }
+  return `At ₱${burn}/mo burn against ₱${income} income, you have ${days} days of runway. ${store.activeScenarioIds.length > 0 ? 'Your selected scenarios are extending your safety net.' : 'You have the habits to grow it.'}`
 })
 
 const whatToDoAboutIt = computed(() =>

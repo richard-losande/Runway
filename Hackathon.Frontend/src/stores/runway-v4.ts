@@ -185,6 +185,7 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
 
     isComputingScenarios.value = true
     error.value = null
+    diagnosis.value = null // clear stale diagnosis so the screen uses reactive fallback text
 
     // Snapshot active state so we can revert on failure
     const prevActiveIds = [...activeScenarioIds.value]
@@ -257,11 +258,11 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
       const response = await diagnoseRunwayV4(
         insightProfile.value,
         state.value,
-        baselineDays.value,
-        zone.value,
+        displayDays.value,
+        displayZone.value,
         fw?.label ?? '',
         fw?.delta ?? 0,
-        fw ? baselineDays.value + fw.delta : baselineDays.value,
+        fw ? displayDays.value + fw.delta : displayDays.value,
       )
       diagnosis.value = response.diagnosis
       currentScreen.value = 7
@@ -321,49 +322,22 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
   function analyzeFromPayroll(manualSpend: number) {
     if (!payroll.value) return
 
-    // Separate government statutory deductions from other deductions
-    const govNames = ['SSS', 'PhilHealth', 'Pag-IBIG', 'Withholding Tax']
-    const govDeductions = payroll.value.deductions.filter(d => govNames.includes(d.name))
-    const otherDeductions = payroll.value.deductions.filter(d => !govNames.includes(d.name))
-
-    const govTotal = govDeductions.reduce((sum, d) => sum + d.amount, 0)
-    const otherDeductionTotal = otherDeductions.reduce((sum, d) => sum + d.amount, 0)
-    const earningsTotal = payroll.value.earnings.reduce((sum, e) => sum + e.amount, 0)
-    const deductionTotal = govTotal + otherDeductionTotal
-    const monthlyBurn = manualSpend > 0 ? manualSpend : deductionTotal
-
-    const govMerchants = govDeductions.map(d => ({ name: d.name, monthlyAvg: d.amount }))
-    const otherMerchants = otherDeductions.map(d => ({ name: d.name, monthlyAvg: d.amount }))
-
-    // Remaining spend after deductions goes to Misc (user's estimated discretionary spending)
-    const remainingSpend = Math.max(0, monthlyBurn - deductionTotal)
+    const monthlyBurn = manualSpend > 0 ? manualSpend : 0
 
     const emptyCat = (tier: CategoryBreakdownEntry['tier']): CategoryBreakdownEntry => ({
       monthlyAverage: 0, monthlyAmounts: [0], tier, topMerchants: [], transactionCount: 0,
     })
 
     const payrollCategories: Record<CategoryKey, CategoryBreakdownEntry> = {
-      GovernmentDeductions: {
-        monthlyAverage: govTotal,
-        monthlyAmounts: [govTotal],
-        tier: 'Committed' as const,
-        topMerchants: govMerchants,
-        transactionCount: govDeductions.length,
-      },
-      BillsUtilities: {
-        monthlyAverage: otherDeductionTotal,
-        monthlyAmounts: [otherDeductionTotal],
-        tier: 'Essential' as const,
-        topMerchants: otherMerchants,
-        transactionCount: otherDeductions.length,
-      },
       Misc: {
-        monthlyAverage: remainingSpend,
-        monthlyAmounts: [remainingSpend],
+        monthlyAverage: monthlyBurn,
+        monthlyAmounts: [monthlyBurn],
         tier: 'Discretionary' as const,
         topMerchants: [],
         transactionCount: 0,
       },
+      GovernmentDeductions: emptyCat('Committed'),
+      BillsUtilities: emptyCat('Essential'),
       FoodDining: emptyCat('Discretionary'),
       Groceries: emptyCat('Essential'),
       Transport: emptyCat('Essential'),
@@ -374,7 +348,7 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
       EntertainmentSubs: emptyCat('Discretionary'),
     }
 
-    const takeHome = payroll.value.netPay + earningsTotal
+    const takeHome = payroll.value.netPay
 
     const runwayState: RunwayState = {
       liquidCash: Number(liquidSavings.value) || 0,
@@ -419,8 +393,8 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
       dangerSignals: [],
       trends: [],
       remittanceNote: null,
-      flexibleBurn: remainingSpend,
-      fixedBurn: govTotal + otherDeductionTotal,
+      flexibleBurn: monthlyBurn,
+      fixedBurn: 0,
     }
     scenarios.value = []
     fastestWinId.value = null
