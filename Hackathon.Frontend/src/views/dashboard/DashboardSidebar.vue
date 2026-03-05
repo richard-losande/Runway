@@ -1,42 +1,147 @@
 <template>
-  <nav class="flex flex-col items-center bg-white border-r spr-border-color-base w-[68px] min-h-screen py-4 px-3 gap-2">
-    <!-- Logo -->
-    <div class="mb-2">
-      <spr-logo name="hr" theme="dark" :width="36" />
-    </div>
-
-    <!-- Main nav icons -->
-    <SidebarIcon icon="ph:magnifying-glass" label="Search" />
-    <SidebarIcon icon="ph:star-four" label="AI" />
-    <SidebarIcon icon="ph:house-simple-fill" label="Dashboard" :active="true" />
-    <SidebarIcon icon="ph:chart-bar" label="Analytics" />
-    <SidebarIcon icon="ph:squares-four" label="Apps" />
-
-    <div class="w-9 h-[2px] spr-bg-mushroom-100 my-1" />
-
-    <SidebarIcon icon="ph:money" label="Payroll" />
-    <SidebarIcon icon="ph:wallet" label="Finances" />
-    <SidebarIcon icon="ph:flow-arrow" label="Flow" />
-
-    <div class="w-9 h-[2px] spr-bg-mushroom-100 my-1" />
-
-    <SidebarIcon icon="ph:gear" label="Setup" />
-
-    <div class="flex-1" />
-
-    <!-- Bottom icons -->
-    <SidebarIcon icon="ph:bell" label="Notifications" />
-    <SidebarIcon icon="ph:file-text" label="Requests" />
-
-    <!-- Profile avatar -->
-    <div class="mt-2">
-      <spr-badge text="16" variant="danger" size="big" position="top">
-        <spr-avatar variant="initial" initial="Jane Doe" size="md" badge :status="'disabled'" />
-      </spr-badge>
-    </div>
-  </nav>
+  <spr-sidenav
+    :nav-links="navLinks"
+    :active-nav="activeNav"
+    :user-menu="userMenu"
+    :has-search="false"
+    @get-navlink-item="handleNavClick"
+  >
+    <template #logo-image>
+      <img src="/sprout-icon.svg" alt="Sprout" style="width:36px;height:36px;object-fit:contain;" />
+    </template>
+  </spr-sidenav>
 </template>
 
 <script setup lang="ts">
-import SidebarIcon from './SidebarIcon.vue'
+import { ref } from 'vue'
+
+const activeNav = ref({
+  parentNav: 'Dashboard',
+  menu: '',
+  submenu: '',
+})
+
+const userMenu = ref({
+  name: 'Jane Doe',
+  email: 'jane@company.com',
+  profileImage: '',
+  items: [
+    {
+      title: 'Profile',
+      icon: 'ph:user',
+      hidden: false,
+      redirect: { openInNewTab: false, isAbsoluteURL: false, link: '#profile' },
+    },
+    {
+      title: 'Sign Out',
+      icon: 'ph:sign-out',
+      hidden: false,
+      redirect: { openInNewTab: false, isAbsoluteURL: false, link: '#logout' },
+    },
+  ],
+})
+
+const navLinks = ref({
+  top: [
+    {
+      parentLinks: [
+        {
+          title: 'Dashboard',
+          icon: 'ph:house-simple',
+          redirect: { openInNewTab: false, isAbsoluteURL: false, link: '#dashboard' },
+          menuLinks: [],
+          submenuLinks: [],
+          attributes: [],
+        },
+        {
+          title: 'Analytics',
+          icon: 'ph:chart-bar',
+          redirect: { openInNewTab: false, isAbsoluteURL: false, link: '#analytics' },
+          menuLinks: [],
+          submenuLinks: [],
+          attributes: [],
+        },
+        {
+          title: 'Apps',
+          icon: 'ph:squares-four',
+          redirect: { openInNewTab: false, isAbsoluteURL: false, link: '#apps' },
+          menuLinks: [],
+          submenuLinks: [],
+          attributes: [],
+        },
+      ],
+    },
+    {
+      parentLinks: [
+        {
+          title: 'Payroll',
+          icon: 'ph:money',
+          redirect: { openInNewTab: false, isAbsoluteURL: false, link: '#payroll' },
+          menuLinks: [],
+          submenuLinks: [],
+          attributes: [],
+        },
+        {
+          title: 'Finances',
+          icon: 'ph:wallet',
+          redirect: { openInNewTab: false, isAbsoluteURL: false, link: '#finances' },
+          menuLinks: [],
+          submenuLinks: [],
+          attributes: [],
+        },
+        {
+          title: 'Flow',
+          icon: 'ph:arrows-split',
+          redirect: { openInNewTab: false, isAbsoluteURL: false, link: '#flow' },
+          menuLinks: [],
+          submenuLinks: [],
+          attributes: [],
+        },
+      ],
+    },
+  ],
+  bottom: [
+    {
+      parentLinks: [
+        {
+          title: 'Setup',
+          icon: 'ph:gear',
+          redirect: { openInNewTab: false, isAbsoluteURL: false, link: '#setup' },
+          menuLinks: [],
+          submenuLinks: [],
+          attributes: [],
+        },
+        {
+          title: 'Notifications',
+          icon: 'ph:bell',
+          redirect: { openInNewTab: false, isAbsoluteURL: false, link: '#notifications' },
+          menuLinks: [],
+          submenuLinks: [],
+          attributes: [],
+        },
+        {
+          title: 'Requests',
+          icon: 'ph:file-text',
+          redirect: { openInNewTab: false, isAbsoluteURL: false, link: '#requests' },
+          menuLinks: [],
+          submenuLinks: [],
+          attributes: [],
+        },
+      ],
+    },
+  ],
+})
+
+function handleNavClick(item: any) {
+  if (!item) return
+  activeNav.value = { parentNav: item.title, menu: '', submenu: '' }
+}
 </script>
+
+<style scoped>
+/* Push bottom nav icons to bottom of flex column, just above the avatar */
+:deep(.spr-grid.spr-justify-center.spr-gap-2.spr-px-3.spr-pb-4.spr-pt-0) {
+  margin-top: auto;
+  padding-bottom: 60px;
+}
+</style>

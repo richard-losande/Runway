@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center justify-between px-6 py-4 bg-white border-b spr-border-color-base">
+  <div class="flex items-center justify-between px-6 py-4 border-b spr-border-color-base" style="background: linear-gradient(90deg, #ffffff 0%, #ffffff 50%, #D2F612 100%)">
     <div class="flex items-center gap-2 min-w-0">
       <spr-icon id="announcement-icon" icon="ph:megaphone-fill" size="2xs" tone="success" variant="tertiary" />
       <span class="spr-body-sm-semibold spr-text-color-strong flex-shrink-0">Let's Celebrate, Happy Birthday!</span>
