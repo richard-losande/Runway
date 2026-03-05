@@ -263,8 +263,9 @@ function revealProfile() {
 }
 
 function applyCustom() {
-  if (customLabel.value && customAmount.value) {
-    store.setCustomScenario(customLabel.value, customAmount.value)
+  const amount = Number(customAmount.value) || 0
+  if (customLabel.value.trim() && amount !== 0) {
+    store.setCustomScenario(customLabel.value.trim(), amount)
     showCustomForm.value = false
   }
 }

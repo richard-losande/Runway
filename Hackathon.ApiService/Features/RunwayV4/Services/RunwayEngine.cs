@@ -49,19 +49,36 @@ public class RunwayEngine : IRunwayEngine
 
     public int ComputeBaseline(RunwayState state)
     {
-        if (state.LiquidCash <= 0) return 0;
-        if (state.MonthlyBurn <= 0) return 9999;
+        if (state.MonthlyBurn <= 0) return 0;
 
-        return (int)Math.Floor(state.LiquidCash / (state.MonthlyBurn / 30m));
+        // If there are savings, compute days directly: cash / daily burn
+        if (state.LiquidCash > 0)
+        {
+            return (int)Math.Floor(state.LiquidCash / (state.MonthlyBurn / 30m));
+        }
+
+        // No savings: check if income creates a monthly surplus.
+        // Project 6 months of surplus as "effective savings" to show
+        // the runway the user is building toward.
+        var monthlySurplus = state.TakeHome - state.MonthlyBurn;
+        if (monthlySurplus > 0)
+        {
+            var projectedCash = monthlySurplus * 6m;
+            return (int)Math.Floor(projectedCash / (state.MonthlyBurn / 30m));
+        }
+
+        return 0;
     }
 
     public int ComputeScenarioDays(Scenario scenario, RunwayState state)
     {
         var liquidCash = state.LiquidCash;
         var monthlyBurn = state.MonthlyBurn;
+        var takeHome = state.TakeHome;
 
         decimal newBurn;
         decimal newCash;
+        decimal newTakeHome = takeHome;
 
         switch (scenario.Type)
         {
@@ -82,11 +99,9 @@ public class RunwayEngine : IRunwayEngine
 
             case ScenarioType.IncomeGain:
             {
-                var monthlyGap = monthlyBurn - state.TakeHome;
-                var newGap = Math.Max(0m, monthlyGap - (scenario.Params.GainAmount ?? 0m));
-                var effectiveBurn = state.TakeHome + newGap;
-
-                newBurn = effectiveBurn;
+                // Extra income offsets expenses, reducing effective monthly burn
+                newBurn = monthlyBurn - (scenario.Params.GainAmount ?? 0m);
+                newBurn = Math.Max(1m, newBurn);
                 newCash = liquidCash;
                 break;
             }
@@ -126,7 +141,7 @@ public class RunwayEngine : IRunwayEngine
         {
             LiquidCash = newCash,
             MonthlyBurn = newBurn,
-            TakeHome = state.TakeHome,
+            TakeHome = newTakeHome,
             Categories = state.Categories
         };
 

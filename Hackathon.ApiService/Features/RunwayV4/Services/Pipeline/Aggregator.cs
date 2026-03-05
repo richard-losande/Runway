@@ -22,6 +22,7 @@ public class Aggregator : IAggregator
         [CategoryKey.EntertainmentSubs] = CategoryTier.Discretionary,
         [CategoryKey.GovernmentDeductions] = CategoryTier.Committed,
         [CategoryKey.Misc] = CategoryTier.Discretionary,
+        [CategoryKey.Income] = CategoryTier.Committed,
     };
 
     public AggregationResult Aggregate(List<Transaction> transactions)
@@ -156,11 +157,28 @@ public class Aggregator : IAggregator
 
         var monthlyBurn = categories.Values.Sum(c => c.MonthlyAverage);
 
+        // Top credit sources (income origins)
+        var topCreditSources = creditTransactions
+            .GroupBy(t => !string.IsNullOrEmpty(t.Merchant) ? t.Merchant! : t.RawDesc)
+            .Select(g => new MerchantSummary
+            {
+                Name = g.Key,
+                MonthlyAvg = months.Count > 0
+                    ? Math.Round(g.Sum(t => t.Amount) / months.Count, 2)
+                    : 0,
+            })
+            .OrderByDescending(m => m.MonthlyAvg)
+            .Take(5)
+            .ToList();
+
         return new AggregationResult
         {
             Categories = categories,
             MonthlyBurn = monthlyBurn,
             MonthlyCredits = monthlyCredits,
+            MonthlyCreditAmounts = monthlyCreditAmounts,
+            TopCreditSources = topCreditSources,
+            CreditTransactionCount = creditTransactions.Count,
             CorrectionCandidates = correctionCandidates,
             AllTransactions = transactions,
         };

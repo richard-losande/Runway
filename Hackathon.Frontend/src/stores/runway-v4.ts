@@ -23,7 +23,7 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
   // ── State ──────────────────────────────────────────────────────────
 
   const currentScreen = ref(1)
-  const liquidSavings = ref(180000)
+  const liquidSavings = ref(0)
   const monthlyIncome = ref(28500)
 
   const csvFile = ref<File | null>(null)
@@ -71,11 +71,15 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
   )
 
   const displayDays = computed(() =>
-    activeScenarioIds.value.length > 0 ? stackedDays.value : baselineDays.value,
+    activeScenarioIds.value.length > 0 && !isComputingScenarios.value
+      ? stackedDays.value
+      : baselineDays.value,
   )
 
   const displayZone = computed(() =>
-    activeScenarioIds.value.length > 0 ? stackedZone.value : zone.value,
+    activeScenarioIds.value.length > 0 && !isComputingScenarios.value
+      ? stackedZone.value
+      : zone.value,
   )
 
   // ── Actions ────────────────────────────────────────────────────────
@@ -86,9 +90,10 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
     currentScreen.value = 4 // processing screen
 
     try {
+      const savings = Number(liquidSavings.value) || 0
       const response = await analyzeRunwayV4(
         monthlyIncome.value,
-        liquidSavings.value,
+        savings,
         csvFile.value,
         useDemoData.value,
       )
@@ -129,7 +134,7 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
     activeScenarioIds.value = []
     customScenarios.value = []
     reverseTarget.value = null
-    stackedDays.value = 0
+    stackedDays.value = response.baselineDays
     stackedDelta.value = 0
     stackedZone.value = response.zone
     stackedDate.value = ''
@@ -145,7 +150,7 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
     await recomputeScenarios()
   }
 
-  function setCustomScenario(label: string, monthlyAmount: number) {
+  async function setCustomScenario(label: string, monthlyAmount: number) {
     const id = `custom_${nextCustomId++}`
     const custom: Scenario = {
       id,
@@ -158,21 +163,21 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
     }
     customScenarios.value.push(custom)
     activeScenarioIds.value.push(id)
-    recomputeScenarios()
+    await recomputeScenarios()
   }
 
-  function clearCustomScenario(id: string) {
+  async function clearCustomScenario(id: string) {
     customScenarios.value = customScenarios.value.filter(s => s.id !== id)
     const index = activeScenarioIds.value.indexOf(id)
     if (index >= 0) {
       activeScenarioIds.value.splice(index, 1)
     }
-    recomputeScenarios()
+    await recomputeScenarios()
   }
 
-  function setReverseTarget(target: number) {
+  async function setReverseTarget(target: number) {
     reverseTarget.value = target
-    recomputeScenarios()
+    await recomputeScenarios()
   }
 
   async function recomputeScenarios() {
@@ -180,6 +185,13 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
 
     isComputingScenarios.value = true
     error.value = null
+
+    // Snapshot active state so we can revert on failure
+    const prevActiveIds = [...activeScenarioIds.value]
+    const prevStackedDays = stackedDays.value
+    const prevStackedDelta = stackedDelta.value
+    const prevStackedZone = stackedZone.value
+    const prevStackedDate = stackedDate.value
 
     try {
       const response = await computeScenariosV4(
@@ -192,6 +204,11 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
       applyScenarioResult(response)
     } catch (e: any) {
       error.value = e.message || 'Scenario computation failed'
+      // Revert to previous stacked values so display doesn't show stale/zero data
+      stackedDays.value = prevStackedDays
+      stackedDelta.value = prevStackedDelta
+      stackedZone.value = prevStackedZone
+      stackedDate.value = prevStackedDate
     } finally {
       isComputingScenarios.value = false
     }
@@ -261,7 +278,7 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
 
   function restart() {
     currentScreen.value = 1
-    liquidSavings.value = 180000
+    liquidSavings.value = 0
     monthlyIncome.value = 28500
     csvFile.value = null
     useDemoData.value = true
@@ -360,7 +377,7 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
     const takeHome = payroll.value.netPay + earningsTotal
 
     const runwayState: RunwayState = {
-      liquidCash: liquidSavings.value,
+      liquidCash: Number(liquidSavings.value) || 0,
       monthlyBurn: monthlyBurn,
       takeHome: takeHome,
       categories: Object.fromEntries(
@@ -369,9 +386,21 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
     }
 
     // Compute baseline days
-    const days = runwayState.monthlyBurn <= 0
-      ? 9999
-      : Math.floor(runwayState.liquidCash / (runwayState.monthlyBurn / 30))
+    let days: number
+    if (runwayState.monthlyBurn <= 0) {
+      days = 0
+    } else if (runwayState.liquidCash > 0) {
+      days = Math.floor(runwayState.liquidCash / (runwayState.monthlyBurn / 30))
+    } else {
+      // No savings: project 6 months of surplus as effective savings
+      const monthlySurplus = runwayState.takeHome - runwayState.monthlyBurn
+      if (monthlySurplus > 0) {
+        const projectedCash = monthlySurplus * 6
+        days = Math.floor(projectedCash / (runwayState.monthlyBurn / 30))
+      } else {
+        days = 0
+      }
+    }
 
     const getZone = (d: number): ZoneName => {
       if (d < 30) return 'Critical'
@@ -402,7 +431,7 @@ export const useRunwayV4Store = defineStore('runway-v4', () => {
     activeScenarioIds.value = []
     customScenarios.value = []
     reverseTarget.value = null
-    stackedDays.value = 0
+    stackedDays.value = days
     stackedDelta.value = 0
     stackedZone.value = zone.value
     stackedDate.value = ''

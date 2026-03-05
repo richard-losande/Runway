@@ -17,7 +17,8 @@ public enum CategoryKey
     Transfers,
     EntertainmentSubs,
     GovernmentDeductions,
-    Misc
+    Misc,
+    Income
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter))]

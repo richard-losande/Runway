@@ -12,6 +12,7 @@ export type CategoryKey =
   | 'EntertainmentSubs'
   | 'GovernmentDeductions'
   | 'Misc'
+  | 'Income'
 
 export type CategoryTier = 'Essential' | 'Discretionary' | 'Committed'
 

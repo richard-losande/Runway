@@ -85,18 +85,18 @@ public class DiagnosisNarrativeAgent : IDiagnosisNarrativeAgent
             if (string.IsNullOrWhiteSpace(messageContent))
             {
                 _logger.LogWarning("Empty response from OpenAI, using fallback");
-                return GetFallback(request.State, request.InsightProfile);
+                return GetFallback(request);
             }
 
             var diagnosis = JsonSerializer.Deserialize<DiagnosisContent>(messageContent, JsonOptions);
             if (diagnosis is null)
             {
                 _logger.LogWarning("Failed to deserialize DiagnosisContent from OpenAI response, using fallback");
-                return GetFallback(request.State, request.InsightProfile);
+                return GetFallback(request);
             }
 
             // Post-processing: check for banned words and replace affected fields
-            var fallback = GetFallback(request.State, request.InsightProfile);
+            var fallback = GetFallback(request);
 
             if (ContainsBannedWord(diagnosis.WhatIsHappening))
             {
@@ -132,51 +132,76 @@ public class DiagnosisNarrativeAgent : IDiagnosisNarrativeAgent
         catch (OperationCanceledException)
         {
             _logger.LogWarning("Diagnosis generation timed out, using fallback");
-            return GetFallback(request.State, request.InsightProfile);
+            return GetFallback(request);
         }
         catch (HttpRequestException ex)
         {
             _logger.LogWarning(ex, "OpenAI API request failed, using fallback");
-            return GetFallback(request.State, request.InsightProfile);
+            return GetFallback(request);
         }
         catch (JsonException ex)
         {
             _logger.LogWarning(ex, "Failed to parse OpenAI response, using fallback");
-            return GetFallback(request.State, request.InsightProfile);
+            return GetFallback(request);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error in diagnosis generation, using fallback");
-            return GetFallback(request.State, request.InsightProfile);
+            return GetFallback(request);
         }
     }
 
-    private DiagnosisContent GetFallback(RunwayState state, InsightProfile profile)
+    private DiagnosisContent GetFallback(RunwayDiagnoseRequest request)
     {
-        if (_demoMode)
+        return BuildFallbackDiagnosis(request);
+    }
+
+    internal static DiagnosisContent BuildFallbackDiagnosis(RunwayDiagnoseRequest request)
+    {
+        var state = request.State;
+        var profile = request.InsightProfile;
+        var days = request.BaselineDays;
+        var zone = request.Zone;
+        var burnFmt = Fmt(state.MonthlyBurn);
+        var savingsFmt = Fmt(state.LiquidCash);
+
+        // Zone-specific problem statements (per spec)
+        var whatIsHappening = zone switch
         {
-            return AlexGarciaFixtures.FallbackDiagnosis;
-        }
+            ZoneName.Critical =>
+                $"At \u20b1{burnFmt}/mo burn, your \u20b1{savingsFmt} buffer runs out in {days} days. You need breathing room today.",
+            ZoneName.Fragile =>
+                $"Your savings cover {days} days. One unexpected expense could push you into the red.",
+            ZoneName.Stable =>
+                $"At \u20b1{burnFmt}/mo burn, your \u20b1{savingsFmt} buffer runs out in {days} days. " +
+                "The goal is to grow this before your spending pattern closes the gap.",
+            ZoneName.Strong =>
+                $"At {days} days, your buffer is solid. The opportunity now is to make this money work harder while you have room.",
+            _ =>
+                $"Your monthly burn is \u20b1{burnFmt} with {days} days of runway.",
+        };
 
-        return BuildFallbackDiagnosis(state, profile);
-    }
-
-    internal static DiagnosisContent BuildFallbackDiagnosis(RunwayState state, InsightProfile profile)
-    {
-        var gap = state.MonthlyBurn - state.TakeHome;
-        var hasGap = gap > 0;
-
-        var whatIsHappening = hasGap
-            ? $"Your monthly burn is \u20b1{Fmt(state.MonthlyBurn)}, but your take-home is \u20b1{Fmt(state.TakeHome)}. " +
-              $"Your savings are covering a \u20b1{Fmt(gap)} monthly gap."
-            : $"Your monthly burn is \u20b1{Fmt(state.MonthlyBurn)} against a take-home of \u20b1{Fmt(state.TakeHome)}.";
-
-        var reductionDays = Math.Round(5000m / (state.MonthlyBurn / 30m));
+        var reductionDays = state.MonthlyBurn > 0
+            ? (int)Math.Round(5000m / (state.MonthlyBurn / 30m))
+            : 0;
         var whatToDoAboutIt =
             $"Your highest-impact move is to reduce your discretionary spend. " +
             $"Even a \u20b15,000 monthly reduction adds {reductionDays} days to your runway.";
 
-        var honestTake = "The number that matters most is the gap between what comes in and what goes out.";
+        // Tone matches archetype (per spec)
+        var honestTake = profile.Archetype.Key switch
+        {
+            ArchetypeKey.CrisisMode =>
+                "Focus on one clear next action — every small step buys you time.",
+            ArchetypeKey.LifestyleInflator =>
+                "The gap between what comes in and what goes out has been quietly widening.",
+            ArchetypeKey.SteadySpender =>
+                "The habit is good — the missing piece is the buffer.",
+            ArchetypeKey.ResilientSaver =>
+                "Your buffer is growing. The next move is making it work harder.",
+            _ =>
+                "The number that matters most is the gap between what comes in and what goes out.",
+        };
 
         return new DiagnosisContent
         {

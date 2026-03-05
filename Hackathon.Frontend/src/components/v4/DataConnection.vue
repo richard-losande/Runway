@@ -121,7 +121,10 @@
       <spr-button variant="secondary" size="large" fullwidth @click="store.goToScreen(2)">
         Back
       </spr-button>
-      <spr-button tone="success" size="large" fullwidth @click="submitManual">
+      <spr-button v-if="selectedFile" tone="success" size="large" fullwidth @click="uploadCSV">
+        Analyze This File
+      </spr-button>
+      <spr-button v-else tone="success" size="large" fullwidth @click="submitManual">
         Estimate
       </spr-button>
     </div>
